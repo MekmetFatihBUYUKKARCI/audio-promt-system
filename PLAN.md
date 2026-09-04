@@ -66,6 +66,11 @@ kullanılacak.
    **`/Applications/VoiceInk.app`**. Doğrulandı: ad-hoc imzalı,
    `TeamIdentifier=not set` (bizim derlememiz, upstream'in resmi
    sertifikasıyla karışmıyor), runtime hardened.
+   **Ek sorun + çözüm:** İlk açılışta çöktü — gömülü `whisper.framework`
+   başka (gerçek) bir Team ID ile imzalıydı, ad-hoc imzalı ana uygulamayla
+   uyuşmadı (`different Team IDs` dyld hatası). Çözüm: tüm paket
+   `codesign --force --deep --sign - /Applications/VoiceInk.app` ile tek
+   tip ad-hoc imzayla yeniden imzalandı. Artık sorunsuz açılıyor.
 10. [ ] Mikrofon / Erişilebilirlik / Ekran Kaydı izinleri (Fatih elle onaylayacak)
 11. [ ] Model seçimi: **multilingual** bir yerel Whisper modeli (`.en` olanları
     değil) — Türkçe doğrulanacak
