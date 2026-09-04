@@ -26,6 +26,19 @@ kapalıysa/yavaşsa (8s timeout) sessizce regex sonucuna düşüyor, dikte
 akışını asla bloklamıyor. Uygulama açılışında model önceden ısıtılıyor
 (`_warmup_ollama`) ki ilk gerçek dikte soğuk başlangıç gecikmesi yaşamasın.
 
+**Güvenlik freni eklendi (önemli bulgu):** qwen2.5:3b gibi küçük modeller
+nadiren kısa metinlerde ya harf yutuyor ("Thank you." → "Thakyou.") ya da
+"asla çevirme" talimatına rağmen çeviriyor ("Thank you." → "Teşekkür
+ederim."). Yalın karakter-benzerliği (`difflib.SequenceMatcher`) bunu
+yakalamıyor (%89 benzer çıkıyor!) — asıl belirti **kelime sayısının
+düşmesi**. Kelime-sayısı-düşüşü + benzerlik eşiği birlikte kontrol
+ediliyor artık; 20 denemede 5 gerçek halüsinasyon/çeviriyi doğru
+reddetti. **Kalan kabul edilebilir risk:** 20 denemede 1 kez tek harflik
+küçük bir yazım hatası ("Thank you." → "Thak you.") sızdı — anlam
+bozulmuyor ama mükemmel de değil. Daha büyük/daha yavaş bir model
+(örn. qwen2.5:7b) bunu azaltabilir, ama hız/doğruluk dengesi Fatih'in
+kararı olmalı, şimdilik dokunulmadı.
+
 **Doğrulandı** (birebir test çıktısı):
 ```
 GİRDİ  : "eee şey yani ben bugün eve gidiyorum ve aslında bakkaldan ekmek almam lazım"

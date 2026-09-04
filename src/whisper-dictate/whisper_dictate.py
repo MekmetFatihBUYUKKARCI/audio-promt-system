@@ -473,6 +473,25 @@ def _enhance_with_ollama(text: str) -> str:
         cleaned = (body.get("response") or "").strip()
         if not cleaned:
             return text
+
+        # Güvenlik freni: küçük modeller (qwen2.5:3b) nadiren kısa
+        # metinlerde harf yutup kelimeleri birbirine yapıştırıyor
+        # ("Thank you." -> "Thakyou." — karakter benzerliği hâlâ %89
+        # çıkıyor, SequenceMatcher tek başına bunu YAKALAMIYOR; asıl
+        # belirti kelime sayısının düşmesi). İki kontrol birlikte:
+        import difflib
+        orig_words = len(text.split())
+        cleaned_words = len(cleaned.split())
+        similarity = difflib.SequenceMatcher(None, text, cleaned).ratio()
+        word_drop = orig_words > 0 and cleaned_words < orig_words * 0.7
+        if word_drop or similarity < 0.35:
+            logger.info(
+                "Ollama output rejected (words %d->%d, similarity=%.2f, "
+                "muhtemel halüsinasyon): %r -> %r",
+                orig_words, cleaned_words, similarity, text, cleaned,
+            )
+            return text
+
         return cleaned
     except Exception as e:
         # Ollama kapalı/yavaş/kurulu değil — sessizce ham (regex) sonuca
@@ -1488,6 +1507,14 @@ class AppDelegate(NSObject):
                 self.keywords = self.keywords[:KEYWORDS_MAX_CHARS]
                 logger.info("Keywords trimmed: %d -> %d chars", kw_len, len(self.keywords))
             kwargs = {"path_or_hf_repo": MODEL}
+            # Varsayılan: auto-detect (dil hiç verilmezse mlx_whisper
+            # kendi algılar — TR/EN karışık konuşma için doğru davranış).
+            # config.json'a {"force_language": "tr"} veya "en" yazılırsa
+            # sabitlenir — Faz 2 kontrol panelindeki dil toggle'ı bunu
+            # kullanacak.
+            forced_lang = _load_config().get("force_language")
+            if forced_lang:
+                kwargs["language"] = forced_lang
             use_prompt = bool(self.keywords) and self._disable_prompt_rounds <= 0
             if use_prompt:
                 kwargs["initial_prompt"] = self.keywords
