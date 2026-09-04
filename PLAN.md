@@ -51,9 +51,21 @@ kullanılacak.
    değil düz instruct, Türkçe'de test edildi — çalışıyor), eski 3 model
    silindi (`ollama rm`) → disk 11GB'dan 1.8GB'a düştü. VoiceInk'te
    provider: **Ollama, `http://localhost:11434`, model `qwen2.5:3b`.**
-7. [ ] `src/VoiceInk` içine upstream tekrar klonlanacak (temiz klon)
-8. [ ] `make local` ile derleme (Xcode + cmake zaten kurulu, doğrulandı)
-9. [ ] `~/Downloads/VoiceInk.app` → `/Applications`'a taşı
+7. [x] `src/VoiceInk` içine upstream temiz klonlandı
+8. [x] **`make local` derlemesi BAŞARILI.** İki ek engel çıktı, ikisi de
+   çözüldü:
+   - `Makefile`'ın kendi `xcodebuild` çağrısında eksik olan
+     `-skipPackagePluginValidation` ve `-skipMacroValidation` bayrakları
+     elle eklendi (mlx-swift'in `CudaBuild` plugin'i ve `mlx-swift-lm`'in
+     `MLXHuggingFaceMacros` makrosu, GUI'de tıklanan "Trust" onayı
+     istiyordu, CLI'da bu bayraklarla atlanıyor). Vendored `Makefile`'a
+     dokunulmadı, komut elle çalıştırıldı.
+   - Metal Toolchain eksikti (`xcodebuild -downloadComponent
+     MetalToolchain`, 688MB, resmi Apple bileşeni) — indirildi.
+9. [x] `.local-build/.../VoiceInk.app` → `~/Downloads` → `xattr -cr` →
+   **`/Applications/VoiceInk.app`**. Doğrulandı: ad-hoc imzalı,
+   `TeamIdentifier=not set` (bizim derlememiz, upstream'in resmi
+   sertifikasıyla karışmıyor), runtime hardened.
 10. [ ] Mikrofon / Erişilebilirlik / Ekran Kaydı izinleri (Fatih elle onaylayacak)
 11. [ ] Model seçimi: **multilingual** bir yerel Whisper modeli (`.en` olanları
     değil) — Türkçe doğrulanacak
