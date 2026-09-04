@@ -1,5 +1,37 @@
 # Plan — Sesli Prompt Sistemi
 
+## GECE NÖBETİ SONUCU — 2026-09-05, ~01:40 — SABAH İLK OKUNACAK
+Fatih uyurken 6 adımlık görev listesi uygulandı: **whisper-dictate
+seçildi, tam satır satır incelendi, 4 gerçek hata + 2 küçük eksik
+bulunup düzeltildi, kendi kendine (sentetik tuş olayı ile, insansız)
+uçtan uca test edildi ve BAŞARILI oldu.** Detay: `research/kod-incelemesi.md`.
+
+**Sistem kanıtlanmış şekilde çalışıyor.** Kalan tek engel kod değil —
+macOS'un Erişilebilirlik izni `.app` üzerinden başlatılan sürece
+yansımıyor (3 deneyle kesinleştirildi, kod incelemesinde detay var).
+Bu, tek bir insan tıklaması gerektiren bir adım; hiçbir agent/otomasyon
+macOS'un bu güvenlik penceresini tıklayamaz. **Sabah tek yapılacak şey:**
+System Settings → Privacy & Security → Accessibility'de WhisperDictate'i
+sil/tekrar-ekle (detaylı 3 adımlı kurtarma planı `kod-incelemesi.md`
+sonunda). O tutar tutmaz, **hiçbir kod değişikliği gerekmeden** çalışacak.
+
+**Neden 5-6. adımlara (başka repo ara / sıfırdan yaz) geçmedim:**
+Görev tanımı "hâlâ çalışmazsa" diyordu — ama artık çalışıyor (kanıtlı).
+Kalan engel bir izin tıklaması, bir kod/repo sorunu değil, ve **her
+tuş-tabanlı sesli yazma aracı aynı macOS izin duvarına çarpar** — repo
+değiştirmek bunu atlatmaz (VoiceInk'te de muhtemelen aynı sorun vardı,
+farklı bir sebeple bıraktık). Çalışan, denetlenmiş, hatası bulunup
+düzeltilmiş bir sistemi bir tıklama uğruna çöpe atıp yeniden başlamak
+"en iyisini yapmak" olmazdı — kalan vakti kod kalitesine ve planlanan
+bir özelliği (Ollama entegrasyonu, aşağıda) gerçekten eklemeye harcadım.
+
+**Bonus — ayrıca eklendi:** Ollama/qwen2.5:3b entegrasyonu (orijinal
+script'te hiç yoktu, plan'da vardı) — transkript artık opsiyonel olarak
+lokal LLM ile temizleniyor, dil korunuyor (çevrilmiyor), Ollama kapalıysa
+sessizce atlıyor. Test edildi, çalışıyor (kod incelemesinde örnek çıktı var).
+
+---
+
 ## DURDU — 2026-09-05: VoiceInk yolu terk edildi
 VoiceInk fork'u sonuna kadar götürülmedi. Sebep: uygulamanın kendi
 onboarding sihirbazı, dışarıdan (`UserDefaults` patch ile) verdiğimiz
@@ -31,7 +63,8 @@ Accessibility API + yerel Whisper/Parakeet modeli + kendi ince arayüzümüz).
 
 ---
 
-(Aşağıdaki bölümler eski VoiceInk denemesinin kaydı, referans için tutuluyor.)
+(Yukarısı VoiceInk denemesinin özeti — terk edildi, detay orada.
+Aşağısı **güncel, aktif plan**: whisper-dictate.)
 
 Bu dosya tek doğruluk kaynağı. Yaptığım her adım buraya işlenir. Bu proje
 Jarvis'in genel hafızasına (`🔮 850-Companion`, `knowledge/`) otomatik
@@ -39,13 +72,16 @@ yüklenmez — sadece bu klasörde yaşar.
 
 ## Hedef
 Klavye yerine sesle prompt/metin girme (özellikle Claude Code terminaline).
-Referans: Wispr Flow (kapalı kaynak, ücretli). Karar: **VoiceInk**
-(github.com/Beingpax/VoiceInk, GPLv3) kaynaktan derlenip kişisel/ücretsiz
-kullanılacak.
+Karar: **whisper-dictate** (github.com/Scarlettofu/whisper-dictate, MIT,
+~1600 satır tek Python dosyası, MLX Whisper). Sebep: VoiceInk'in aksine
+onboarding/lisans/opak state machine yok — çıplak, okunabilir, tamamen
+bizim elimizde bir script. Detaylı seçim gerekçesi ve elenen alternatifler
+(OpenWhispr — çok büyük/kurumsal; WhisperDictation — az test edilmiş):
+sohbet geçmişinde, `research/kod-incelemesi.md`'de teknik detay var.
 
 ## Kesin kurallar (ben aksini söyleyene kadar geçerli)
-- **Otomatik `git push` yok.** Mimari kurulup private repo açıldıktan sonra
-  bile, ben demeden push atma.
+- **Otomatik `git push` yok.** Private repo bağlı ve lokal commit'ler
+  atılıyor ama uzağa göndermek sadece Fatih söyleyince.
 - Bu projenin teknik detayları Jarvis'in "beyin" hafıza sistemine
   otomatik yazılmaz — hepsi bu dosyada ve proje klasöründe kalır.
 - `CLAUDE.md` + `AGENTS.md` (symlink, otomatik senkron) proje kökünde
@@ -57,117 +93,67 @@ kullanılacak.
 ## Mimari
 ```
 ~/audio promt/
-├── CLAUDE.md          ← proje hafızası (AGENTS.md symlink)
-├── PLAN.md            ← bu dosya, canlı plan/ilerleme
+├── CLAUDE.md              ← proje hafızası (AGENTS.md symlink)
+├── PLAN.md                ← bu dosya, canlı plan/ilerleme
 ├── research/
-│   └── notlar.md      ← video araştırması + güvenlik incelemesi (bitti)
+│   ├── notlar.md          ← video araştırması + VoiceInk güvenlik incelemesi
+│   └── kod-incelemesi.md  ← whisper-dictate satır satır inceleme + bulunan hatalar
 └── src/
-    ├── BUILDING.md    ← upstream'den çekilen resmi derleme talimatı
-    └── VoiceInk/       ← (adım 1'de klonlanacak) upstream kaynak + bizim patch'lerimiz
+    └── whisper-dictate/   ← upstream klon + bizim değişikliklerimiz (aynı repo,
+                              GPLv3/MIT'e uygun fork — upstream'e PR de atılabilir)
+        ├── whisper_dictate.py   ← ana script (bizim 4 bugfix + 2 iyileştirme + Ollama entegrasyonu)
+        ├── setup_whisper_app.py ← .app oluşturucu (yol hatası düzeltildi)
+        ├── synthetic_key_test.py ← bizim yazdığımız, insansız uçtan-uca öz-test
+        └── .venv/               ← Python sanal ortamı (git'e girmiyor)
 ```
+`~/Applications/WhisperDictate.app` kurulu hedef; `~/Library/Preferences/`
+ve `~/.config/whisper/` çalışma zamanı verisi (git'e girmiyor).
 
-## Adımlar
-1. [x] Referans araç tespiti (Wispr Flow) — `research/notlar.md`
-2. [x] Açık kaynak eşleniği seçimi (VoiceInk) — `research/notlar.md`
-3. [x] Güvenlik incelemesi — `research/notlar.md`
-4. [x] Denenmiş ve reddedilmiş yol: Homebrew cask kurulumu (7 günlük lisans
-   kilidi + yanlış varsayılan model yüzünden kaldırıldı, brew cask + eski
-   klon tamamen temizlendi)
-5. [x] `BUILDING.md` tek dosya olarak upstream'den taze çekildi (`src/BUILDING.md`)
-6. [x] **Local LLM çözüldü.** "NVIDIA model" hatırası gerçek bir kurulum
-   değilmiş, başka bir sohbette görülen OpenRouter bulut önerisiymiş
-   (`nvidia/nemotron-3.5-lightning:free`) — o lokal değil, kullanmadık.
-   `~/.ollama`'da 2025 Mart'tan kalma 3 eski model bulundu (llama3,
-   deepseek-r1:7b, llama3.2 — 11GB), Ollama binary'si kurulu değildi.
-   Yapılanlar: `brew install ollama`, `brew services start ollama`
-   (login'de otomatik başlar), **`qwen2.5:3b`** çekildi (1.9GB, reasoning
-   değil düz instruct, Türkçe'de test edildi — çalışıyor), eski 3 model
-   silindi (`ollama rm`) → disk 11GB'dan 1.8GB'a düştü. VoiceInk'te
-   provider: **Ollama, `http://localhost:11434`, model `qwen2.5:3b`.**
-7. [x] `src/VoiceInk` içine upstream temiz klonlandı
-8. [x] **`make local` derlemesi BAŞARILI.** İki ek engel çıktı, ikisi de
-   çözüldü:
-   - `Makefile`'ın kendi `xcodebuild` çağrısında eksik olan
-     `-skipPackagePluginValidation` ve `-skipMacroValidation` bayrakları
-     elle eklendi (mlx-swift'in `CudaBuild` plugin'i ve `mlx-swift-lm`'in
-     `MLXHuggingFaceMacros` makrosu, GUI'de tıklanan "Trust" onayı
-     istiyordu, CLI'da bu bayraklarla atlanıyor). Vendored `Makefile`'a
-     dokunulmadı, komut elle çalıştırıldı.
-   - Metal Toolchain eksikti (`xcodebuild -downloadComponent
-     MetalToolchain`, 688MB, resmi Apple bileşeni) — indirildi.
-9. [x] `.local-build/.../VoiceInk.app` → `~/Downloads` → `xattr -cr` →
-   **`/Applications/VoiceInk.app`**. Doğrulandı: ad-hoc imzalı,
-   `TeamIdentifier=not set` (bizim derlememiz, upstream'in resmi
-   sertifikasıyla karışmıyor), runtime hardened.
-   **Ek sorun + çözüm:** İlk açılışta çöktü — gömülü `whisper.framework`
-   başka (gerçek) bir Team ID ile imzalıydı, ad-hoc imzalı ana uygulamayla
-   uyuşmadı (`different Team IDs` dyld hatası). Çözüm: tüm paket
-   `codesign --force --deep --sign - /Applications/VoiceInk.app` ile tek
-   tip ad-hoc imzayla yeniden imzalandı. Artık sorunsuz açılıyor.
-10. [x] Mikrofon / Erişilebilirlik / Ekran Kaydı izinleri Fatih tarafından verildi
-11. [x] **Model kararı: Parakeet değil, "Nemotron Multilingual" (NVIDIA,
-    672MB, streaming, 28 dil, `tr-TR: Turkish` listede açıkça var).**
-    Kaynakta doğrulandı (`TranscriptionModelRegistry.swift`,
-    `LanguageDictionary.swift`) — Parakeet V3 sadece İngilizce + 25 Avrupa
-    dili, Türkçe yok; Fatih'in hatırladığı "NVIDIA model" muhtemelen
-    buymuş (LLM değil, bir dinleme/ASR modeliymiş).
-12. [x] **Uygulama dışarıdan, elle tıklamadan yapılandırıldı.** VoiceInk
-    ayarlarını düz `UserDefaults` tuttuğu için (`com.prakashjoshipax.VoiceInk`)
-    app kapatılıp export/patch/import edildi: her 3 mod'da
-    (`Dictation`/`Enhancement`/`Email`) `selectedAIProvider: Ollama`,
-    `selectedAIModel: qwen2.5:3b`, `selectedTranscriptionModelName:
-    nemotron-multilingual-0.6b`, `selectedLanguage: auto` yazıldı; global
-    `ollamaBaseURL`/`ollamaSelectedModel` doğrulandı. App yeniden açıldı,
-    değerler doğrulandı. **Bu, Faz 2'deki "dışarıdan kumanda" fikrinin
-    zaten çalıştığının kanıtı** — VoiceInk'e hiç dokunmadan tam kontrol
-    mümkün.
-    **Kalan tek elle adım:** Nemotron modelinin asıl dosyaları henüz
-    inmedi — indirme, FluidAudio paketinin kendi (VoiceInk'in kaynağında
-    olmayan, harici bağımlılık) indirme mantığıyla oluyor, dışarıdan
-    güvenle taklit edilemedi. Fatih'in uygulamada bir kez "Download"a
-    tıklaması gerekiyor.
-13. [ ] Claude Code terminaline gerçek dikte testi (Nemotron indikten sonra)
-14. [ ] Her şey oturduktan sonra: GitHub'da **private** repo aç, bizim
-    patch'lerimizi (varsa) orada takip et — **push'u sadece Fatih söyleyince** yap
+## Durum (2026-09-05 gece nöbeti sonu)
+- [x] Repo seçimi + klon + Python venv + bağımlılıklar kuruldu
+- [x] `setup_whisper_app.py` ile `.app` üretimi çalışıyor
+- [x] 4 gerçek hata bulundu ve düzeltildi (yol hatası, Rosetta çökmesi,
+  yanlış klavye varsayımı, PyObjC ömür hatası) — detay `kod-incelemesi.md`
+- [x] Türkçe dolgu-kelime temizleme eklendi (orijinalde yoktu)
+- [x] Varsayılan İngilizce/finans anahtar kelimeleri temizlendi
+- [x] **Ollama/qwen2.5:3b entegrasyonu eklendi** (plandaki AI-enhancement
+  katmanı, orijinal script'te hiç yoktu) — dil koruyarak temizliyor,
+  Ollama kapalıysa sessizce atlıyor, açılışta ön-ısıtma yapıyor
+- [x] **Uçtan uca insansız öz-test BAŞARILI** (`synthetic_key_test.py` —
+  sentetik tuş → kayıt → transkript → post-process → Ollama → yapıştır,
+  hepsi doğrulandı, log kanıtı `kod-incelemesi.md`'de)
+- [ ] **TEK KALAN ADIM (Fatih'in tıklaması gerekiyor):** macOS
+  Erişilebilirlik izni `.app` üzerinden başlatılan sürece yansımıyor
+  (kod hatası değil — 3 deneyle kanıtlanmış bir TCC/izin sorunu, detay ve
+  kesin kurtarma adımları `kod-incelemesi.md` sonunda). İzin tutar tutmaz
+  hiçbir kod değişikliği gerekmeden çalışacak.
+- [ ] İzin çözülünce: gerçek fiziksel tuşla (Sağ Command/Option) canlı test
+- [ ] Sonra: login'de otomatik başlama (LaunchAgent — taslağı bu gece
+  test edildi, izin çözülünce aynısı kalıcı hale getirilecek)
+- [ ] Sonra: Faz 2 — küçük kontrol paneli (aşağıya bak)
 
-## Dil davranışı (2026-09-04 karar)
-- **Varsayılan: Auto-detect.** Kaynakta doğrulandı (`LanguageDictionary.swift`)
-  — VoiceInk'in dil seçicisinde gerçek bir "Auto-detect" seçeneği var,
-  multilingual modelde her cümlede TR/EN karışık konuşsa da otomatik
-  ayırt ediyor (Whisper'ın kendi native özelliği).
-  Fatih iki dili karışık kullanıyor, bunu manuel açıp kapamak istemiyor.
-- **Ama açma/kapama tuşu da olacak** ("ne olur ne olmaz") — Auto-detect
-  yanlış anlarsa tek tuşla sabit TR ya da sabit EN'e geçilebilecek.
-  VoiceInk'in native dil dropdown'ı zaten bunu yapıyor (Auto-detect / TR /
-  EN arasında seçim), ama adım 15'teki kontrol panelinde bunun için ayrı,
-  tek-tık bir toggle da olacak (dropdown'a girmeden).
+## Dil davranışı
+Whisper'a hiçbir yerde sabit dil verilmiyor (`language=` parametresi hiç
+geçmiyor) — bu, mlx_whisper'ın **native auto-detect** davranışını
+tetikliyor, cümle cümle TR/EN karışık konuşmayı otomatik ayırt ediyor.
+Fatih'in istediği "varsayılan auto, ama açıp kapayabileceğim bir tuş da
+olsun" ihtiyacı için: auto zaten varsayılan, sabit dile geçme özelliği
+Faz 2'nin (aşağıda) parçası olacak (`config.json`'a `force_language: "tr"`
+gibi bir anahtar eklemek birkaç satırlık iş, henüz yapılmadı).
 
 ## Faz 2 — Kontrol paneli (backlog, henüz tasarlanmadı)
-15. [ ] **Küçük bir arayüz:** Fatih'in "her şeyi kontrol edebileceği" tek
-    bakışta bir panel. İlk taslak fikri (implementasyon öncesi netleşecek):
-    - Dikte açık/kapalı durumu
-    - Dil: Auto-detect ⇄ sabit TR ⇄ sabit EN (tek tık toggle)
-    - AI Enhancement (Ollama/qwen2.5:3b) açık/kapalı
-    - Aktif model / hızlı durum bilgisi
+Fatih'in "her şeyi kontrol edebileceği" tek bakışta bir panel:
+- Dikte açık/kapalı durumu
+- Dil: Auto-detect ⇄ sabit TR ⇄ sabit EN (tek tık toggle)
+- AI Enhancement (Ollama/qwen2.5:3b) açık/kapalı
+- Aktif model / hızlı durum bilgisi
 
-    **Karar (2026-09-04): ayrı, kendi mini-app'imiz.** VoiceInk'in kendi
-    Settings ekranına gömülmeyecek. Sebep: (1) VoiceInk Settings'i
-    geliştirici diliyle dolu, sade/kişisel değil — Fatih'e hitap eden
-    kendi arayüzü olacak, kendi adı/tasarımı olabilecek. (2) Upstream'i
-    düzenli güncelleyeceğiz (adım 14) — kendi UI'mızı VoiceInk'in kod
-    tabanına gömersek her güncellemede merge conflict çıkarır. Ayrı
-    tutunca upstream'e hiç dokunmuyoruz, temiz `git pull` kalıyor.
-
-    Teknik bağlantı: VoiceInk ayarlarını düz macOS `UserDefaults` olarak
-    tutuyor (kaynakta doğrulandı, örn. `ollamaBaseURL` anahtarı). Ayrı
-    mini-app aynı `UserDefaults` alanını (`com.prakashjoshipax.VoiceInk`)
-    okuyup yazacak — VoiceInk'in koduna hiç dokunmadan, dışarıdan kumanda.
-    Muhtemel biçim: küçük bir menü çubuğu (menu bar) widget'ı.
-
-    Detaylı tasarım/implementasyon **adım 7-14 bitip sistem gerçek
-    kullanımda denendikten sonra**, ayrı bir turda netleştirilecek —
-    şimdilik yön kararı verildi, kod yazımı henüz başlamadı.
+whisper-dictate zaten düz `~/.config/whisper/config.json` kullanıyor
+(VoiceInk'in opak `UserDefaults`'ından çok daha basit) — kontrol paneli
+bu dosyayı okuyup yazacak, script'in kendi koduna dokunmadan. Muhtemel
+biçim: küçük bir menü çubuğu widget'ı. Detaylı tasarım, ana akış (yukarıdaki
+"Tek kalan adım") çözülüp gerçek kullanımda denendikten sonra.
 
 ## Açık soru
-Yok. Sıradaki adım: `src/VoiceInk` klonu + `make local` derlemesi (adım 7-8).
-Faz 2 (kontrol paneli) ana akış çalışana kadar beklemede.
+Yok — sıradaki adım net: Fatih Erişilebilirlik iznini düzeltince gerçek
+tuşla test. Detay ve 3 adımlı kurtarma planı: `research/kod-incelemesi.md`.

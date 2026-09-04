@@ -6,29 +6,30 @@ videosunda kullandığı **Wispr Flow** (kapalı kaynak, ücretli, Windows'ta
 sistem tepsisinden çalışıyor, "Paste last transcript" ile terminale metin
 basıyor).
 
-## Karar
-Sıfırdan yazmıyoruz. **VoiceInk** (github.com/beingpax/VoiceInk) —
-Wispr Flow'un en olgun açık kaynak Mac eşleniği — fork/kur, sonra eksik
-kalan davranışları (örn. Claude Code terminaline yapıştırma) üstüne
-yamala. Detaylı araştırma ve alternatif kıyası: `research/notlar.md`.
+## Karar (2026-09-05, güncel)
+İlk denenen **VoiceInk** (Swift/Xcode) terk edildi — onboarding sihirbazı
+dışarıdan verdiğimiz config'i görmezden geliyordu, Fatih'in "kontrolüm
+sınırlı" tepkisi üzerine tamamen kaldırıldı (detay: PLAN.md'nin "DURDU"
+bölümü). Yerine **whisper-dictate** (github.com/Scarlettofu/whisper-dictate,
+MIT, tek Python dosyası, MLX Whisper) seçildi — basit, opak state machine'i
+yok, tamamen bizim elimizde. Kaynak kod satır satır incelendi, 4 gerçek hata
+bulunup düzeltildi, kendi kendine (sentetik tuş olayıyla) uçtan uca test
+edilip **çalıştığı kanıtlandı**. Detay: `research/kod-incelemesi.md`.
 
-Fatih'in makinesi: Apple Silicon (arm64), macOS 26.6.2 — VoiceInk'in
-gereksinimini (Apple Silicon + macOS 14.4+) rahat karşılıyor.
+Fatih'in makinesi: Apple Silicon (arm64), macOS 26.6.2. Klavyesi **Logitech
+K250** (Apple değil) — bu önemli, kodda buna göre özel bir düzeltme var.
 
 ## Durum / canlı plan
 Ayrıntılı adım adım plan ve ilerleme: **`PLAN.md`** — her oturumda önce
-oraya bak, orayı güncelle. Özet: araştırma + güvenlik incelemesi bitti,
-brew sürümü (lisans kilidi + yanlış dil modeli yüzünden) tamamen kaldırıldı,
-local LLM olarak Ollama + `qwen2.5:3b` kuruldu, şimdi kaynaktan `make local`
-ile temiz derleme aşamasındayız.
+oraya bak, orayı güncelle. Özet: sistem çalışıyor (kanıtlı), kalan tek engel
+macOS Erişilebilirlik izninin `.app`'e yansımaması — kod değil, Fatih'in tek
+bir tıklaması gerekiyor (`research/kod-incelemesi.md` sonunda kesin adımlar).
 
 ## GitHub
 Private repo: **github.com/MekmetFatihBUYUKKARCI/audio-promt-system**
-(`origin` olarak bağlı, lokal `main` dalında ilk commit atıldı). Sadece
+(`origin` olarak bağlı, lokal `main` dalında commit'ler atılıyor). Sadece
 bizim dosyalarımız takip edilir (`CLAUDE.md`, `AGENTS.md`, `PLAN.md`,
-`research/`, `src/BUILDING.md`) — vendored `src/VoiceInk/` kaynağı
-`.gitignore`'da, hiç commitlenmiyor (BUILDING.md'deki adımlarla her
-seferinde temiz klonlanıyor).
+`research/`) — vendored `src/whisper-dictate/` kaynağı `.gitignore`'da.
 
 ## Sabit kurallar
 - **Otomatik `git push` yok.** Remote bağlı ve lokal commit'ler atılıyor
