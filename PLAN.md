@@ -1,4 +1,37 @@
-# Plan — Sesli Prompt Sistemi (VoiceInk fork)
+# Plan — Sesli Prompt Sistemi
+
+## DURDU — 2026-09-05: VoiceInk yolu terk edildi
+VoiceInk fork'u sonuna kadar götürülmedi. Sebep: uygulamanın kendi
+onboarding sihirbazı, dışarıdan (`UserDefaults` patch ile) verdiğimiz
+yapılandırmayı (Ollama/qwen2.5:3b, Nemotron Multilingual, auto dil) görmezden
+gelip kendi sabit varsayılanını (Parakeet — Türkçe desteklemiyor) indirmeye
+başladı. Fatih'in tepkisi: "kontrolümün sınırlı olması hiç hoşuma gitmedi" —
+üçüncü parti bir uygulamanın opak state machine'ine güvenmek istemiyor.
+
+**Yapılan temizlik:** `/Applications/VoiceInk.app`, `~/Downloads/VoiceInk.app`,
+klonlanan `src/VoiceInk` repo'su, tüm `UserDefaults`/`Application Support`/
+`Caches`/`Preferences` kalıntıları, Homebrew cask cache'i — hepsi silindi,
+doğrulandı (iz yok). **Korunan:** Ollama + `qwen2.5:3b` (VoiceInk'e özgü
+değildi, ayrı altyapı, hâlâ duruyor) ve bizim kendi iskeletimiz
+(`CLAUDE.md`/`AGENTS.md`/`PLAN.md`/`research/`/git geçmişi) — hiç dokunulmadı.
+
+**Kararların çoğu hâlâ geçerli, sadece "hangi hazır uygulamayı fork'layıp
+kuracağız" sorusu yeniden açıldı:**
+- Hedef aynı: sesle prompt/metin, özellikle Claude Code terminaline
+- Lokal AI enhancement: Ollama + qwen2.5:3b (hazır, kurulu)
+- Dil: TR+EN, auto-detect tercih
+- Otomatik push yok, beyne otomatik yükleme yok — bu kurallar değişmedi
+
+**Açık soru (bir sonraki oturumda Fatih'le netleştirilecek):** "Sıfırdan
+yapacağız" ne demek — (a) VoiceInk'i bırakıp daha az "kendi fikri olan"
+(opinionated), onboarding'siz/daha sade başka bir açık kaynak projeye mi
+bakalım, yoksa (b) gerçekten kendi küçük aracımızı mı yazalım (macOS
+Accessibility API + yerel Whisper/Parakeet modeli + kendi ince arayüzümüz).
+(b) çok daha büyük bir iş — konuşmadan varsayılmayacak.
+
+---
+
+(Aşağıdaki bölümler eski VoiceInk denemesinin kaydı, referans için tutuluyor.)
 
 Bu dosya tek doğruluk kaynağı. Yaptığım her adım buraya işlenir. Bu proje
 Jarvis'in genel hafızasına (`🔮 850-Companion`, `knowledge/`) otomatik
