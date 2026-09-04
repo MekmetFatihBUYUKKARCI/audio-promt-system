@@ -19,12 +19,20 @@ gereksinimini (Apple Silicon + macOS 14.4+) rahat karşılıyor.
 Ayrıntılı adım adım plan ve ilerleme: **`PLAN.md`** — her oturumda önce
 oraya bak, orayı güncelle. Özet: araştırma + güvenlik incelemesi bitti,
 brew sürümü (lisans kilidi + yanlış dil modeli yüzünden) tamamen kaldırıldı,
-şimdi kaynaktan `make local` ile temiz derleme aşamasındayız. Açık soru:
-Fatih'in kurduğu local LLM hangisi (Ollama/LM Studio/başka) — `PLAN.md`
-adım 6.
+local LLM olarak Ollama + `qwen2.5:3b` kuruldu, şimdi kaynaktan `make local`
+ile temiz derleme aşamasındayız.
+
+## GitHub
+Private repo: **github.com/MekmetFatihBUYUKKARCI/audio-promt-system**
+(`origin` olarak bağlı, lokal `main` dalında ilk commit atıldı). Sadece
+bizim dosyalarımız takip edilir (`CLAUDE.md`, `AGENTS.md`, `PLAN.md`,
+`research/`, `src/BUILDING.md`) — vendored `src/VoiceInk/` kaynağı
+`.gitignore`'da, hiç commitlenmiyor (BUILDING.md'deki adımlarla her
+seferinde temiz klonlanıyor).
 
 ## Sabit kurallar
-- **Otomatik `git push` yok**, private repo açılsa bile — sadece Fatih söyleyince.
+- **Otomatik `git push` yok.** Remote bağlı ve lokal commit'ler atılıyor
+  ama uzağa göndermek sadece Fatih söyleyince.
 - Bu projenin teknik detayı Jarvis'in genel hafızasına (`🔮 850-Companion`,
   `knowledge/`) otomatik yüklenmez, sadece bu klasörde yaşar.
 
