@@ -1,0 +1,11 @@
+# Upstream VoiceInk kaynağı vendored tutulmuyor — BUILDING.md'deki
+# adımlarla her seferinde temiz klonlanıyor. Sadece bizim patch'lerimiz
+# (varsa, ayrı bir dizinde) takip edilecek.
+src/VoiceInk/
+
+# macOS
+.DS_Store
+
+# derleme çıktıları
+.local-build/
+*.xcarchive
