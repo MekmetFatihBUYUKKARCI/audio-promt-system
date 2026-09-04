@@ -71,12 +71,29 @@ kullanılacak.
    uyuşmadı (`different Team IDs` dyld hatası). Çözüm: tüm paket
    `codesign --force --deep --sign - /Applications/VoiceInk.app` ile tek
    tip ad-hoc imzayla yeniden imzalandı. Artık sorunsuz açılıyor.
-10. [ ] Mikrofon / Erişilebilirlik / Ekran Kaydı izinleri (Fatih elle onaylayacak)
-11. [ ] Model seçimi: **multilingual** bir yerel Whisper modeli (`.en` olanları
-    değil) — Türkçe doğrulanacak
-12. [ ] AI Enhancement adımında Ollama/qwen2.5:3b bağlanacak (adım 6'da
-    hazır), OpenRouter/bulut key'e hiç gerek yok
-13. [ ] Claude Code terminaline gerçek dikte testi
+10. [x] Mikrofon / Erişilebilirlik / Ekran Kaydı izinleri Fatih tarafından verildi
+11. [x] **Model kararı: Parakeet değil, "Nemotron Multilingual" (NVIDIA,
+    672MB, streaming, 28 dil, `tr-TR: Turkish` listede açıkça var).**
+    Kaynakta doğrulandı (`TranscriptionModelRegistry.swift`,
+    `LanguageDictionary.swift`) — Parakeet V3 sadece İngilizce + 25 Avrupa
+    dili, Türkçe yok; Fatih'in hatırladığı "NVIDIA model" muhtemelen
+    buymuş (LLM değil, bir dinleme/ASR modeliymiş).
+12. [x] **Uygulama dışarıdan, elle tıklamadan yapılandırıldı.** VoiceInk
+    ayarlarını düz `UserDefaults` tuttuğu için (`com.prakashjoshipax.VoiceInk`)
+    app kapatılıp export/patch/import edildi: her 3 mod'da
+    (`Dictation`/`Enhancement`/`Email`) `selectedAIProvider: Ollama`,
+    `selectedAIModel: qwen2.5:3b`, `selectedTranscriptionModelName:
+    nemotron-multilingual-0.6b`, `selectedLanguage: auto` yazıldı; global
+    `ollamaBaseURL`/`ollamaSelectedModel` doğrulandı. App yeniden açıldı,
+    değerler doğrulandı. **Bu, Faz 2'deki "dışarıdan kumanda" fikrinin
+    zaten çalıştığının kanıtı** — VoiceInk'e hiç dokunmadan tam kontrol
+    mümkün.
+    **Kalan tek elle adım:** Nemotron modelinin asıl dosyaları henüz
+    inmedi — indirme, FluidAudio paketinin kendi (VoiceInk'in kaynağında
+    olmayan, harici bağımlılık) indirme mantığıyla oluyor, dışarıdan
+    güvenle taklit edilemedi. Fatih'in uygulamada bir kez "Download"a
+    tıklaması gerekiyor.
+13. [ ] Claude Code terminaline gerçek dikte testi (Nemotron indikten sonra)
 14. [ ] Her şey oturduktan sonra: GitHub'da **private** repo aç, bizim
     patch'lerimizi (varsa) orada takip et — **push'u sadece Fatih söyleyince** yap
 
