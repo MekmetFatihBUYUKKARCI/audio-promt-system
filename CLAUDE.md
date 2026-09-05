@@ -1,4 +1,4 @@
-# Sesli Prompt Sistemi — "Fısıltı"
+# Sesli Prompt Sistemi — "Audio Promt"
 
 Amaç: Fatih'in yazabileceği her yere (özellikle Claude Code terminaline)
 klavye yerine **sesle** prompt/metin girebilmesi. Referans: Wispr Flow

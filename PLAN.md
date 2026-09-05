@@ -1,4 +1,4 @@
-# Plan — Sesli Prompt Sistemi ("Fısıltı")
+# Plan — Sesli Prompt Sistemi ("Audio Promt")
 
 Bu dosya tek doğruluk kaynağı. Yapılan her adım buraya işlenir. Bu proje
 Jarvis'in genel hafızasına (`🔮 850-Companion`, `knowledge/`) otomatik
@@ -148,15 +148,42 @@ olarak bunun test edilmesidir.
 
 | Karar | Seçim | Neden |
 |---|---|---|
-| Dil / çatı | **Native Swift + SwiftUI**, Xcode projesi | dersler.md md.1: Python+PyObjC+script-exec zinciri TCC güvenini hiç kazanamadı. topluluk-arastirmasi.md md.6: sorunu çözmüş projelerin **hepsi** native Swift. Ollama zaten ayrı bir süreç, Python'a ihtiyaç yok |
+| Dil / çatı | **Native Swift + SwiftUI**, SPM paketi (Xcode IDE değil) | dersler.md md.1: Python+PyObjC+script-exec zinciri TCC güvenini hiç kazanamadı. topluluk-arastirmasi.md md.6: sorunu çözmüş projelerin **hepsi** native Swift. Ollama zaten ayrı bir süreç, Python'a ihtiyaç yok |
 | Konuşma tanıma | **WhisperKit** (argmaxinc) | Saf Swift paketi (SPM), CoreML üzerinden Apple Neural Engine kullanır, tamamen offline. Alternatif whisper.cpp C köprüsü gerektirir, gereksiz karmaşa |
 | Model | `large-v3-turbo` kuantize (~600–700 MB) | TR/EN karışığında en iyi denge. Geliştirme sırasında `base` ile hızlı döngü, teslimde turbo |
 | Kısayol | **Carbon `RegisterEventHotKey`** | Bölüm 1: izin gerektirmeyen tek yol |
 | Metin teslimi v1 | `NSPasteboard` | İzin gerektirmez |
 | Metin teslimi v2 | Pano + `CGEvent` ⌘V | En uyumlu yöntem; her uygulamada çalışır. Karakter karakter yazma yavaş ve terminalde bozuluyor |
 | LLM temizleme | **Ollama + qwen2.5:3b** | Zaten kurulu ve çalışıyor, HTTP ile `localhost:11434`. Yeniden kurulum yok |
-| Depolama | JSON, `~/Library/Application Support/Fisilti/` | Basit, elle okunabilir, veritabanı gereksiz |
-| Paketleme | Xcode → `.app`, kararlı imzayla | Faz 4'te ayrıntılı |
+| Depolama | JSON, `~/Library/Application Support/AudioPromt/` | Basit, elle okunabilir, veritabanı gereksiz |
+| Derleme sistemi | **Swift Package Manager + Makefile**, Xcode IDE hiç açılmaz | Aşağıda ayrıntılı |
+| Paketleme | Makefile `.app` paketini elle kurar, kararlı imzayla | Faz 4'te ayrıntılı |
+
+### Neden Xcode IDE kullanmıyoruz (2026-09-05 kararı)
+
+Ayrım: **Xcode.app (IDE)** ile **toolchain** (`swiftc`, SPM, `codesign`,
+macOS SDK) farklı şeyler. Derlemek için toolchain şart, IDE değil. SwiftUI,
+AppKit, AVFoundation, Carbon hepsi sistem framework'ü — `swift build` ile
+linklenir, `.app` paketini Makefile elle kurar.
+
+Xcode zaten kurulu olduğu için disk kazancı yok; fayda kontrolde:
+
+- Her şey düz metin → programatik düzenlenebilir, git'te okunur diff.
+  `.xcodeproj/project.pbxproj` buna düşman.
+- Derleme tek komut (`make run`), tıklanacak arayüz yok.
+- **İmzalama Makefile'da açıkça görünür.** Xcode imza/provisioning'i arka
+  planda kendi bildiği gibi yapar — VoiceInk dersi (dersler.md md.7) tam
+  olarak buydu. Faz 4 imza duvarında her satırın görünür olması gerekiyor.
+- `make run` ile terminalden başlatma, izin mirasını da çözüyor
+  (topluluk-arastirmasi.md md.3, vocamac'in önerdiği yöntem).
+
+Referans: `VocaHQ/vocamac` (`make run`), `per-simmons/murmur-youtube`
+(Makefile'da `security find-identity` ile imza kimliğini otomatik bulur).
+
+Kaybedilenler ve neden önemsiz: Interface Builder (SwiftUI kodla yazılıyor),
+Instruments (gerekmiyor), IDE debugger (terminalden `lldb` veya print yeter).
+
+Xcode.app diskte kalır — SDK sağlayıcısı olarak gerekli, ama hiç açılmaz.
 
 ### Neden hazır bir projeyi fork'lamıyoruz
 
@@ -199,16 +226,25 @@ geçilmez. Her faz sonunda commit atılır (push yok — bkz. Kesin kurallar).
 
 ### Faz 0 — İskelet (hedef: yarım gün)
 
-1. Xcode'da yeni macOS App projesi: **Fısıltı**, bundle id
-   `com.fatih.fisilti`, arayüz SwiftUI, dil Swift.
-2. `Info.plist`:
+1. **Xcode IDE açılmıyor.** `swift package init --type executable` ile
+   SPM paketi kur (proje adı Faz 0 öncesi netleşince — bkz. bölüm 12).
+   `Package.swift`'te `platforms: [.macOS(.v14)]`, framework bağımlılıkları
+   (AppKit, SwiftUI, AVFoundation, Carbon) sistem kütüphaneleri olarak
+   linklenir, ek paket gerekmez.
+2. Elle `Info.plist`:
    - `LSUIElement = YES` (Dock ikonu yok)
-   - `NSMicrophoneUsageDescription` = "Fısıltı, konuştuğunuzu metne
-     çevirmek için mikrofonu kullanır. Ses cihazınızdan çıkmaz."
+   - `NSMicrophoneUsageDescription` = "…, konuştuğunuzu metne çevirmek
+     için mikrofonu kullanır. Ses cihazınızdan çıkmaz."
 3. `AppDelegate` + `NSStatusItem` menü çubuğu ikonu (`mic` SF Symbol).
 4. Menüden çıkılabiliyor.
-5. Git: proje `~/audio promt/` altına, `src/Fisilti/`. `.gitignore`'a
-   `*.xcuserdata`, `DerivedData/`, indirilen modeller.
+5. **Makefile** yaz — üç hedef yeterli:
+   - `make run` — `swift build` + `.app` paketini
+     `Contents/MacOS/`, `Contents/Resources/`, `Info.plist` ile elle kur
+     + terminalden başlat (izin mirası için, topluluk-arastirmasi.md md.3)
+   - `make sign` — Faz 4'te dolduracak, şimdilik ad-hoc (`codesign -s -`)
+   - `make clean`
+6. Git: proje `~/audio promt/` altına, `src/AudioPromt/`. `.gitignore`'a
+   `.build/`, indirilen modeller.
 
 **Çıkış kriteri:** Menü çubuğunda ikon var, tıklanınca menü açılıyor,
 Dock'ta ikon yok, ⌘Tab'de görünmüyor.
@@ -221,7 +257,7 @@ Dock'ta ikon yok, ⌘Tab'de görünmüyor.
    SPM ile ekle). `⌃⌥Space` kaydet.
 2. **Doğrulama testi — bu fazın asıl amacı:** Erişilebilirlik izni
    VERİLMEMİŞ haldeyken kısayol çalışıyor mu? Sistem Ayarları →
-   Gizlilik ve Güvenlik → Erişilebilirlik listesinde Fısıltı **olmamalı**
+   Gizlilik ve Güvenlik → Erişilebilirlik listesinde Audio Promt **olmamalı**
    ve kısayol yine de tetiklemeli. Çalışmıyorsa **derhal dur** — bu planın
    temel varsayımı yanlış demektir, mimariyi baştan gözden geçir.
 3. `AVAudioEngine` ile mikrofon tap'i. İlk açılışta mikrofon izni istenir.
@@ -295,9 +331,9 @@ sadece **CDHash** ile tanır, CDHash her derlemede değişir, izin sessizce
 düşer. Çözüm sabit bir kimlik.
 
 1. Anahtar Zinciri Erişimi → Sertifika Yardımcısı → **Kendinden imzalı,
-   türü "Kod İmzalama"** bir sertifika üret ("Fisilti Local Signing").
-2. Xcode'da Signing → manuel, bu kimliği seç. Her derlemede aynı
-   sertifika kullanılır.
+   türü "Kod İmzalama"** bir sertifika üret ("Audio Promt Local Signing").
+2. Makefile'daki `make sign` hedefinde `codesign -s "Audio Promt Local
+   Signing" ...` kullan. Her derlemede aynı sertifika kullanılır.
 3. TCC'nin sakladığı designated requirement artık CDHash yerine
    **sertifikanın leaf hash'i**ne dayanır — bu yeniden derlemede
    değişmez.
@@ -328,7 +364,7 @@ fonksiyonel kalır, tek fark: otomatik yapıştırma yerine Fatih ⌘V basar.
 
 Geliştirme sırasındaki hızlı çözüm (topluluk-arastirmasi.md md.2):
 ```
-tccutil reset Accessibility com.fatih.fisilti
+tccutil reset Accessibility com.fatih.audiopromt
 ```
 sonra uygulamayı kapat/aç.
 
@@ -389,7 +425,7 @@ Sol tık → menüyü aç. Sağ tık → hızlı kayıt aç/kapa (kısayola alte
   Mikrofon ▸  (dahili / ROG Strix Go / …)
   ─────────────────────────────────────────────────
   Ayarlar…                                       ⌘,
-  Fısıltı Hakkında
+  Audio Promt Hakkında
   Çık                                            ⌘Q
 ```
 
@@ -490,7 +526,7 @@ dersler.md md.7'deki VoiceInk dersi: **onboarding sihirbazı yapma.**
 Uygulama açılır açılmaz çalışır durumda olur. Tek istisna, tek bir
 karşılama penceresi:
 
-1. "Fısıltı çalışıyor. `⌃⌥Space` ile konuşmaya başla."
+1. "Audio Promt çalışıyor. `⌃⌥Space` ile konuşmaya başla."
 2. Mikrofon izni butonu (tek tık)
 3. Model indirme ilerleme çubuğu
 4. `Button` "Anladım" → kapanır, bir daha görünmez
@@ -525,27 +561,28 @@ doğrulamak. Çakışma çıkarsa yedekler: `⌃⌥D`, `⌃⇧Space`.
 ├── research/
 │   ├── dersler.md
 │   └── topluluk-arastirmasi.md
-└── src/Fisilti/
-    ├── Fisilti.xcodeproj
-    └── Fisilti/
-        ├── FisiltiApp.swift          uygulama girişi, LSUIElement
-        ├── AppState.swift            merkezi durum (ObservableObject)
-        ├── Core/
-        │   ├── HotKeyManager.swift   Carbon RegisterEventHotKey
-        │   ├── AudioRecorder.swift   AVAudioEngine, dönüşüm, RMS, VAD
-        │   ├── Transcriber.swift     WhisperKit sarmalayıcı
-        │   ├── TextCleaner.swift     sözlük + Ollama + güvenlik ağı
-        │   ├── TextDelivery.swift    pano (v1) / CGEvent ⌘V (v2)
-        │   └── HistoryStore.swift    JSON kalıcılık
-        ├── UI/
-        │   ├── MenuBarController.swift
-        │   ├── HUDPanel.swift        NSPanel, .nonactivatingPanel
-        │   ├── WaveformView.swift    16 çubuk
-        │   ├── SettingsView.swift    5 sekme
-        │   └── OnboardingView.swift  tek pencere
-        └── Resources/
-            ├── Info.plist
-            └── vocabulary.json       varsayılan sözlük
+└── src/AudioPromt/          (isim netleşince değişir)
+    ├── Package.swift              SPM manifest, IDE gerektirmez
+    ├── Makefile                   run / sign / clean
+    ├── Sources/App/
+    │   ├── main.swift             uygulama girişi, LSUIElement
+    │   ├── AppState.swift         merkezi durum (ObservableObject)
+    │   ├── Core/
+    │   │   ├── HotKeyManager.swift   Carbon RegisterEventHotKey
+    │   │   ├── AudioRecorder.swift   AVAudioEngine, dönüşüm, RMS, VAD
+    │   │   ├── Transcriber.swift     WhisperKit sarmalayıcı
+    │   │   ├── TextCleaner.swift     sözlük + Ollama + güvenlik ağı
+    │   │   ├── TextDelivery.swift    pano (v1) / CGEvent ⌘V (v2)
+    │   │   └── HistoryStore.swift    JSON kalıcılık
+    │   └── UI/
+    │       ├── MenuBarController.swift
+    │       ├── HUDPanel.swift        NSPanel, .nonactivatingPanel
+    │       ├── WaveformView.swift    16 çubuk
+    │       ├── SettingsView.swift    5 sekme
+    │       └── OnboardingView.swift  tek pencere
+    └── Resources/
+        ├── Info.plist
+        └── vocabulary.json       varsayılan sözlük
 ```
 
 ---
@@ -599,8 +636,10 @@ Bunlar teknik değil, tercih/para kararı — ben veremem:
 1. **Faz 4, Yol 2: $99/yıl Apple Developer Program alınacak mı?**
    Yol 1 (ücretsiz kararlı imza) önce denenecek. Tutmazsa: ya $99, ya
    manuel ⌘V ile yaşamak. Karar Faz 4'e gelince verilir, şimdi değil.
-2. **Uygulama adı** — "Fısıltı" öneri. Değiştirilecekse Faz 0'dan önce
-   söyle, sonra bundle id değişimi izinleri sıfırlar.
+2. ~~Uygulama adı~~ — **kesinleşti: "Audio Promt"**, bundle id
+   `com.fatih.audiopromt` (2026-09-05). Faz 0'dan sonra değiştirilirse
+   bundle id değişir, izinler sıfırlanır — o yüzden bundan sonra
+   değiştirmemek gerekir.
 3. **⌃⌥Space uygun mu?** Sık kullandığın başka bir uygulama bunu
    kullanıyorsa şimdi söyle.
 
@@ -608,4 +647,5 @@ Bunlar teknik değil, tercih/para kararı — ben veremem:
 
 ## 13. Sıradaki adım
 
-**Faz 0, madde 1** — Xcode projesini oluştur. Onay verilirse başlıyorum.
+**Faz 0, madde 1** — `swift package init` ile SPM iskeletini kur. Onay
+verilirse başlıyorum.
