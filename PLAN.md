@@ -88,7 +88,7 @@ sonra eklenir — çözülemezse sistem yine de kullanılabilir kalır.
 ┌──────────────────────────────────────────────────────────────────┐
 │  TETİKLEME KATMANI                     (izin gerekmez)           │
 │  Carbon RegisterEventHotKey                                      │
-│    ⌃⌥Space  → kayıt aç/kapa                                      │
+│    ⌃⌥1      → kayıt aç/kapa                                      │
 │    ⌃⌥V      → son metni tekrar panoya koy                        │
 │    Esc      → (sadece kayıt sırasında kayıtlı) iptal             │
 └────────────────────────────┬─────────────────────────────────────┘
@@ -307,23 +307,46 @@ sonrası `codesign -dv` aynı imza kimliğini gösteriyor.
 
 ---
 
-### Faz 1 — Kısayol ve ses yakalama (hedef: 1 gün)
+### Faz 1 — Kısayol ve ses yakalama ✅ TAMAMLANDI (2026-09-05)
 
-1. `RegisterEventHotKey` sarmalayıcısı yaz (veya `soffes/HotKey` paketini
-   SPM ile ekle). `⌃⌥Space` kaydet.
-2. **Doğrulama testi — bu fazın asıl amacı:** Erişilebilirlik izni
-   VERİLMEMİŞ haldeyken kısayol çalışıyor mu? Sistem Ayarları →
-   Gizlilik ve Güvenlik → Erişilebilirlik listesinde Audio Promt **olmamalı**
-   ve kısayol yine de tetiklemeli. Çalışmıyorsa **derhal dur** — bu planın
-   temel varsayımı yanlış demektir, mimariyi baştan gözden geçir.
-3. `AVAudioEngine` ile mikrofon tap'i. İlk açılışta mikrofon izni istenir.
-4. 48kHz stereo → 16kHz mono Float32 dönüşümü (`AVAudioConverter`).
-5. Halka tampon, tavan 120 sn.
-6. Kısayola bas → kaydet, tekrar bas → dur, sesi geçici `.wav` olarak diske
-   yaz.
+**Kısayol `⌃⌥Space` değil `⌃⌥1` oldu** (Fatih'in kararı, session
+içinde). `RegisterEventHotKey` ile `Core/HotKeyManager.swift`,
+`Core/AudioRecorder.swift` (`AVAudioEngine` + `AVAudioConverter`, 16kHz
+mono Float32'ye dönüşüm), `AppState.swift` (durum makinesi:
+idle/starting/recording, bölüm 11'e uygun). Kayıt başlarken/biterken
+sesli geri bildirim eklendi (`Core/SoundFeedback.swift` — Ping/Pop,
+%40 ses düzeyi, "Tink" ilk denemede "berbat" bulunup değiştirildi).
 
-**Çıkış kriteri:** Erişilebilirlik izni yokken kısayol çalışıyor; 10
-saniyelik konuşma kaydedilip QuickTime'da düzgün dinlenebiliyor.
+**Doğrulama testi geçti:** Erişilebilirlik izni hiç verilmemişken
+(TCC listesinde uygulama hiç yok, çünkü Erişilebilirlik API'sine hiç
+dokunulmuyor) kısayol çalışıyor — `osascript`/System Events ile
+sistem çapında tuş gönderilerek doğrulandı.
+
+**Bulunan ve düzeltilen 2 gerçek hata:**
+1. **Çökme:** `AudioRecorder` ilk yazımda `@MainActor` işaretlenmişti.
+   `installTap`'in callback'i CoreAudio'nun gerçek zamanlı ses
+   thread'inde çalıştığı için, Swift'in eşzamanlılık çalışma zamanı
+   bunu izolasyon ihlali sayıp `SIGTRAP` ile çöktürüyordu
+   (`dispatch_assert_queue_fail`). Düzeltme: `@MainActor` yerine
+   `@unchecked Sendable` — sınıf kendi thread-safety'sini kendi yönetir,
+   tıpkı `AVAudioEngine`'in kendisi gibi.
+2. **Yanlış varsayılan giriş cihazı (kod hatası değil, ortam hatası):**
+   İlk birkaç testte kayıt hep sessiz (tam sıfır genlik) çıktı. Uzun bir
+   teşhis sürecinden sonra (TCC izni kontrol edildi — sorunsuzdu; imza/
+   launch yöntemi (`open` vs doğrudan çalıştırma) denendi — fark
+   etmedi) gerçek sebep bulundu: Fatih'in sisteminde varsayılan giriş
+   cihazı "MacBook Air Mikrofonu" (dahili) seçiliyken kendisi ROG Strix
+   Go (USB kulaklık) mikrofonuna konuşuyordu. Sistem Ayarları → Ses →
+   Giriş'ten ROG Strix Go seçilince kayıt anında gerçek ses aldı (tepe
+   genlik ~%21, konuşma paternine uygun dalgalanma). **Ders:** kod her
+   zaman sistemin o anki varsayılan giriş cihazını otomatik kullanıyor
+   — bu doğru davranış; cihaz seçimi arayüzü (bölüm 6.4'te zaten
+   planlanmış "Mikrofon cihazı" picker'ı) bu karışıklığı Faz 3'te
+   önleyecek.
+
+**Çıkış kriteri karşılandı:** Erişilebilirlik izni yokken kısayol
+çalışıyor ✅; gerçek konuşma kaydedildi, format doğru (16kHz mono
+Float32), genlik paterni gerçek ses ✅.
 
 ---
 
@@ -460,7 +483,7 @@ Sol tık → menüyü aç. Sağ tık → hızlı kayıt aç/kapa (kısayola alte
 ### 6.2 Menü içeriği
 
 ```
-  ● Kayıt başlat                              ⌃⌥Space
+  ● Kayıt başlat                              ⌃⌥1
   ↻ Son metni yapıştır                        ⌃⌥V
   ─────────────────────────────────────────────────
   Geçmiş ▸    (son 10, her biri ilk 40 karakter)
@@ -578,7 +601,7 @@ dersler.md md.7'deki VoiceInk dersi: **onboarding sihirbazı yapma.**
 Uygulama açılır açılmaz çalışır durumda olur. Tek istisna, tek bir
 karşılama penceresi:
 
-1. "Audio Promt çalışıyor. `⌃⌥Space` ile konuşmaya başla."
+1. "Audio Promt çalışıyor. `⌃⌥1` ile konuşmaya başla."
 2. Mikrofon izni butonu (tek tık)
 3. Model indirme ilerleme çubuğu
 4. `Button` "Anladım" → kapanır, bir daha görünmez
@@ -592,7 +615,7 @@ her zaman erişilebilir.
 
 | Kısayol | İşlev | Neden bu tuş |
 |---|---|---|
-| **⌃⌥Space** | Kayıt aç/kapa | macOS'ta boşta. Çıplak ⌃Space Spotlight/girdi kaynağı, ⌥Space kesintisiz boşluk — ikisinden de kaçınıldı. K250'de tek elle rahat. Terminal (Terminal.app, iTerm2, Ghostty, Warp) varsayılanlarıyla çakışmıyor |
+| **⌃⌥1** (2026-09-05: `⌃⌥Space`'ten değiştirildi, Fatih'in kararı — "berbat" bulundu) | Kayıt aç/kapa | Fn/Globe denenmedi bile: Carbon `RegisterEventHotKey` modifier olarak Fn'i desteklemiyor, üstelik dersler.md md.2 zaten üçüncü parti klavyede Fn'in çalışmadığını kanıtlamıştı. ⌃⌥1 test edildi ve çalıştığı doğrulandı — Terminal/Spotlight ile çakışmıyor |
 | **⌃⌥V** | Son metni tekrar panoya koy | Wispr Flow'un "Paste last transcript" karşılığı. V harfi yapıştırmayı çağrıştırır |
 | **Esc** | Kaydı iptal et, at | Sadece kayıt sırasında kaydedilir, kayıt bitince serbest bırakılır — böylece Esc başka zaman çalınmaz |
 | **⌃⌥C** | LLM temizlemeyi aç/kapa | Kod dikte ederken temizlemeyi kapatmak isteyeceksin |
@@ -784,13 +807,18 @@ Bunlar teknik değil, tercih kararı — ben veremem:
    `com.fatih.audiopromt` (2026-09-05). Faz 0'dan sonra değiştirilirse
    bundle id değişir, izinler sıfırlanır — o yüzden bundan sonra
    değiştirmemek gerekir.
-3. **⌃⌥Space uygun mu?** Sık kullandığın başka bir uygulama bunu
-   kullanıyorsa şimdi söyle.
+3. ~~⌃⌥Space uygun mu?~~ — **kesinleşti: `⌃⌥1`** (2026-09-05, "berbat"
+   bulunan `⌃⌥Space`'in yerine). Fn tuşu istendi ama denenmedi bile:
+   Carbon `RegisterEventHotKey` API'si Fn'i modifier olarak desteklemiyor
+   (yalnızca Control/Option/Command/Shift var), üstelik dersler.md md.2
+   zaten üçüncü parti klavyede Fn'in donanım seviyesinde çalışmadığını
+   kanıtlamıştı.
 
 ---
 
 ## 15. Sıradaki adım
 
-**Faz 0 tamamlandı.** Sıradaki: **Faz 1** — `RegisterEventHotKey` ile
-`⌃⌥Space` kısayolu ve `AVAudioEngine` ile mikrofon yakalama. Faz 1'in asıl
-sınavı: Erişilebilirlik izni verilmemişken kısayolun çalışması.
+**Faz 0 ve Faz 1 tamamlandı.** Sıradaki: **Faz 2** — WhisperKit ile
+transkripsiyon ve HUD paneli. Faz 2'nin asıl sınavı: Claude Code
+terminaline odaklıyken dikte edip ⌘V ile metnin doğru yere düşmesi,
+odağın hiç kaçmaması.

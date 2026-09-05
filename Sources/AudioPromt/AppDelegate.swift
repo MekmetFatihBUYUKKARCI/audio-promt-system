@@ -3,6 +3,7 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
+    private let appState = AppState()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -11,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             accessibilityDescription: "Audio Promt"
         )
         statusItem.menu = buildMenu()
+        appState.start()
     }
 
     private func buildMenu() -> NSMenu {
