@@ -84,11 +84,6 @@ Private repo: **github.com/MekmetFatihBUYUKKARCI/audio-promt-system**
   onay bekle** — isteği doğrudan uygulayıp sırayı kendiliğinden kırma.
 - **Otomatik `git push` yok.** Remote bağlı ve lokal commit'ler atılıyor
   ama uzağa göndermek sadece Fatih söyleyince.
-- **2026-09-05: proje bitti, Jarvis'in genel hafızasına eklenebilir.**
-  Önceki kural ("Jarvis'in genel hafızasına otomatik yüklenmez, sadece
-  bu klasörde yaşar") Fatih'in açık isteğiyle kaldırıldı — artık
-  MehmetOS kasasının (`🔮 850-Companion`, `knowledge/`) kendi normal
-  senkron mekanizması bu projeyi de kapsayabilir.
 - **Proje kökü kesin olarak `~/audio promt/`.** Başka hiçbir yerde
   (MehmetOS kasası dahil) kopya tutulmaz.
 - Yukarıdaki **dosya senkron protokolü** her zaman geçerli.
