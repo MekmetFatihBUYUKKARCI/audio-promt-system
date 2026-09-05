@@ -354,39 +354,38 @@ istenmedi (bilerek — bkz. bölüm 1), o yüzden asıl sınav burada:
 3. Kodda ufak bir değişiklik yap, rebuild et (aynı imza kimliğiyle),
    tekrar kontrol et — izin hâlâ duruyor mu?
 4. **Tuttuysa:** Faz 4 bitti, Faz 5'e geç, orada tam özelliği yaz.
-   **Tutmadıysa:** aşağıdaki Yol 2 veya Yol 3'e karar ver.
+   **Tutmadıysa:** Yol 2'ye geç (aşağıda).
 
-**Yol 2 — Apple Developer Program ($99/yıl)**
+**Yol 2 — Kaçış planı (kalıcı, ücretsiz — tek alternatif)**
 
-Topluluk araştırmasının kanıtlanmış çözümü: **Developer ID Application
-sertifikası + notarization**. Sabit `TeamIdentifier` verir, TCC bunu
-güncellemeler arasında tanır. VS Code, Slack, Discord aynı yolu
-kullanıyor.
-
-⚠️ **dersler.md md.1'de yazan "ücretsiz Apple ID ile kararlı imza" fikri
-yanlış çıktı.** Ücretsiz Apple ID'nin verdiği "Personal Team" imzası bu
-kararlılığı sağlamıyor.
-
-**Bu, Fatih'in kararı — para harcaması gerekiyor, ben karar veremem.**
-
-**Yol 3 — Kaçış planı (para harcanmazsa)**
+> **Ücretli hiçbir yol yok ve kullanılmayacak.** ($99/yıl Apple
+> Developer Program + Developer ID imzası topluluk araştırmasında
+> "kanıtlanmış çözüm" olarak bulunmuştu, ama Fatih bunu istemiyor —
+> sistemi satın almak isteseydi zaten hazır bir ürün alırdı. Bu proje
+> tamamen ücretsiz kalacak, 2026-09-05'te kesin karar. dersler.md'deki
+> "ücretsiz Apple ID ile kararlı imza" fikrinin neden yetersiz kaldığı
+> not olarak duruyor ama bir seçenek olarak sunulmuyor.
 
 Faz 0–3 zaten Erişilebilirlik izni olmadan çalışıyor. Sistem tam
 fonksiyonel kalır, tek fark: otomatik yapıştırma yerine Fatih ⌘V basar.
-**Bu kabul edilebilir bir son durumdur, başarısızlık değil.**
+**Bu kabul edilebilir bir son durumdur, başarısızlık değil** — Faz 5
+otomatik yapıştırma özelliğini atlar, sistem v1 (pano + manuel ⌘V)
+haliyle kalıcı olarak kullanılır.
 
 Geliştirme sırasındaki hızlı çözüm (topluluk-arastirmasi.md md.2):
 ```
 tccutil reset Accessibility com.fatih.audiopromt
 ```
-sonra uygulamayı kapat/aç.
+sonra uygulamayı kapat/aç — kalıcı değil ama günlük kullanımda izin
+sıfırlanınca hızlı tekrar-izin vermek için işe yarar.
 
-**Çıkış kriteri:** Ya izin yeniden derlemelerden sağ çıkıyor, ya da Yol 3
-bilinçli olarak seçildi ve karar bu dosyaya yazıldı.
+**Çıkış kriteri:** Ya izin yeniden derlemelerden sağ çıkıyor (Faz 5'e
+geçilir), ya da Yol 2 bilinçli olarak seçildi ve karar bu dosyaya
+yazıldı (sistem v1 halinde kalıcılaşır).
 
 ---
 
-### Faz 5 — Otomatik yapıştırma ve cila (Faz 4 Yol 1/2 tuttuysa)
+### Faz 5 — Otomatik yapıştırma ve cila (Faz 4'te izin kararlı çıktıysa)
 
 1. Erişilebilirlik izni kontrolü: `AXIsProcessTrustedWithOptions`.
 2. Yapıştırma: eski pano içeriğini sakla → metni yaz → `CGEvent` ile ⌘V
@@ -606,7 +605,7 @@ doğrulamak. Çakışma çıkarsa yedekler: `⌃⌥D`, `⌃⇧Space`.
 | Risk | Olasılık | Kaçış planı |
 |---|---|---|
 | `RegisterEventHotKey` de izin isterse | Düşük | Faz 1'in ilk saatinde anlaşılır. O zaman: menü çubuğu ikonuna tıklama tetikleyici olur (izinsiz çalışır), kısayol Faz 5'e ertelenir |
-| Kararlı imza (Yol 1) tutmazsa | Orta | Yol 2 ($99) veya Yol 3 (manuel ⌘V ile yaşa). Sistem her durumda kullanılabilir |
+| Kararlı imza tutmazsa (Erişilebilirlik) | Orta | Kaçış planı: manuel ⌘V ile kalıcı yaşa (ücretli yol yok). Sistem her durumda kullanılabilir |
 | WhisperKit büyük modelde yavaş | Düşük | `large-v3-turbo` M-serisinde gerçek zamandan hızlı. Yavaşsa `base`'e düş |
 | Ollama TR'yi EN'e çeviriyor | **Yüksek** (bir kez yaşandı) | Güvenlik ağı zaten bunun için var. Sürekli eleniyorsa temizlemeyi tamamen kapat, sözlük yeter |
 | HUD odak çalıyor | Orta | Faz 2 çıkış kriteri. Çözülemezse HUD'u tamamen kapat, sadece menü çubuğu ikonu durum gösterir |
@@ -645,11 +644,13 @@ doğrulamak. Çakışma çıkarsa yedekler: `⌃⌥D`, `⌃⇧Space`.
 
 ## 12. Fatih'in karar vermesi gereken noktalar
 
-Bunlar teknik değil, tercih/para kararı — ben veremem:
+Bunlar teknik değil, tercih kararı — ben veremem:
 
-1. **Faz 4, Yol 2: $99/yıl Apple Developer Program alınacak mı?**
-   Yol 1 (ücretsiz kararlı imza) önce denenecek. Tutmazsa: ya $99, ya
-   manuel ⌘V ile yaşamak. Karar Faz 4'e gelince verilir, şimdi değil.
+1. ~~Faz 4, Yol 2: $99/yıl Apple Developer Program~~ — **tamamen elendi
+   (2026-09-05).** Ücretli hiçbir yol yok, kullanılmayacak. Faz 4'te
+   kendinden imzalı sertifika (ücretsiz) tutmazsa tek seçenek Yol 2:
+   sistem kalıcı olarak manuel ⌘V ile çalışır — bu bir başarısızlık
+   değil, kabul edilebilir son durum.
 2. ~~Uygulama adı~~ — **kesinleşti: "Audio Promt"**, bundle id
    `com.fatih.audiopromt` (2026-09-05). Faz 0'dan sonra değiştirilirse
    bundle id değişir, izinler sıfırlanır — o yüzden bundan sonra

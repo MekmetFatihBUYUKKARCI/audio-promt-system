@@ -15,10 +15,12 @@ kimliği**.
 
 > ⚠️ **DÜZELTME (2026-09-05):** Aşağıdaki "ücretsiz Apple ID yeter" fikri
 > **yanlış çıktı.** Ücretsiz Apple ID'nin verdiği "Personal Team" imzası bu
-> kararlılığı sağlamıyor. Kanıtlanmış çözüm ücretli Developer ID
-> ($99/yıl) + notarization. Ücretsiz denenecek alternatif: Anahtar
-> Zinciri'nden **kendinden imzalı kararlı kod imzalama sertifikası** —
-> mantık doğru ama henüz doğrulanmadı (bkz. `PLAN.md` Faz 4, Yol 1).
+> kararlılığı sağlamıyor. Topluluk araştırması bunun için ücretli Developer
+> ID ($99/yıl) + notarization'ı gösteriyordu ama **bu proje ücretli hiçbir
+> yol kullanmayacak** (Fatih'in kesin kararı). Denenen ücretsiz alternatif:
+> Anahtar Zinciri'nden **kendinden imzalı kararlı kod imzalama
+> sertifikası** — Faz 0'a taşındı, tutmazsa kaçış planı manuel ⌘V
+> (bkz. `PLAN.md` Faz 4).
 
 **Sıfırdan başlarken:** Bu ihtimali en başta ele al, sona bırakma.
 - ~~Önce gerçek bir (ücretsiz) Apple ID ile Xcode'a giriş yapıp kararlı bir
