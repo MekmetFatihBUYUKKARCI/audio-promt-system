@@ -27,16 +27,11 @@ struct TextCleaner: Sendable {
         var timeout: TimeInterval = 4.0
     }
 
-    private static let systemPrompt = """
-    Aşağıdaki dikte metnini düzelt. Sadece noktalama, büyük harf ve dolgu \
-    kelimeleri (ee, ııı, yani, işte) düzelt. ASLA çevirme. ASLA özetleme. \
-    ASLA yorum ekleme. Sadece düzeltilmiş metni döndür.
-    """
-
     let vocabulary: Vocabulary
     let thresholds: Thresholds
     let ollamaBaseURL: URL
     let ollamaModel: String
+    let systemPrompt: String
     let enabled: Bool
 
     init(
@@ -44,12 +39,14 @@ struct TextCleaner: Sendable {
         thresholds: Thresholds = Thresholds(),
         ollamaBaseURL: URL = URL(string: "http://localhost:11434")!,
         ollamaModel: String = "qwen2.5:3b",
+        systemPrompt: String = Preferences.defaultOllamaSystemPrompt,
         enabled: Bool = true
     ) {
         self.vocabulary = vocabulary
         self.thresholds = thresholds
         self.ollamaBaseURL = ollamaBaseURL
         self.ollamaModel = ollamaModel
+        self.systemPrompt = systemPrompt
         self.enabled = enabled
     }
 
@@ -113,7 +110,7 @@ struct TextCleaner: Sendable {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = thresholds.timeout
 
-        let body = Request(model: ollamaModel, prompt: "\(Self.systemPrompt)\n\n\(text)", stream: false)
+        let body = Request(model: ollamaModel, prompt: "\(systemPrompt)\n\n\(text)", stream: false)
         request.httpBody = try JSONEncoder().encode(body)
 
         let (data, _) = try await URLSession.shared.data(for: request)

@@ -28,6 +28,7 @@ private enum SettingsTab: String, CaseIterable, Identifiable {
 struct SettingsView: View {
     @ObservedObject var prefs = Preferences.shared
     let historyStore: HistoryStore
+    let onPushToTalkKeyChanged: () -> Void
     @State private var selectedTab: SettingsTab = .general
     @State private var slideEdge: Edge = .trailing
 
@@ -82,7 +83,7 @@ struct SettingsView: View {
                             removal: .move(edge: slideEdge == .trailing ? .leading : .trailing).combined(with: .opacity)
                         ))
                 case .shortcuts:
-                    ShortcutsTab(prefs: prefs)
+                    ShortcutsTab(prefs: prefs, onPushToTalkKeyChanged: onPushToTalkKeyChanged)
                         .transition(.asymmetric(
                             insertion: .move(edge: slideEdge).combined(with: .opacity),
                             removal: .move(edge: slideEdge == .trailing ? .leading : .trailing).combined(with: .opacity)
@@ -466,9 +467,6 @@ private struct DictionaryTab: View {
                 .padding(.horizontal, 28)
 
             VStack(alignment: .leading, spacing: 10) {
-                Toggle("Terimleri Whisper'a ipucu olarak da ver", isOn: $prefs.vocabularyHintsEnabled)
-                    .font(.body)
-
                 HStack {
                     Text("Duyulan").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                     Text("Yazılacak").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
@@ -539,6 +537,7 @@ private struct DictionaryTab: View {
 
 private struct ShortcutsTab: View {
     @ObservedObject var prefs: Preferences
+    let onPushToTalkKeyChanged: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -550,6 +549,10 @@ private struct ShortcutsTab: View {
                     LabeledContent("Kayıt başlat/durdur", value: "⌃⌥1")
                         .font(.body)
                     LabeledContent("Son metni yapıştır", value: "⌃⌥V")
+                        .font(.body)
+                    LabeledContent("LLM ile temizlemeyi aç/kapa", value: "⌃⌥C")
+                        .font(.body)
+                    LabeledContent("Kaydı iptal et", value: "Esc (sadece kayıt sırasında)")
                         .font(.body)
                     Text("Bu kısayollar şu an sabit, yeniden atanamıyor.")
                         .font(.footnote)
@@ -571,6 +574,7 @@ private struct ShortcutsTab: View {
                             }
                         }
                         .font(.body)
+                        .onChange(of: prefs.pushToTalkKey) { _, _ in onPushToTalkKeyChanged() }
                         Text("Basılı tutma, Erişilebilirlik izni gerektirir.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)

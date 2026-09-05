@@ -23,7 +23,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         statusItem.menu = buildMenu()
         TextDelivery.requestAccessibilityTrustIfNeeded()
-        LaunchAtLogin.registerIfNeeded()
 
         appState.onIconStateChange = { [weak self] state in
             self?.iconController.apply(state)
@@ -31,6 +30,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         appState.start()
 
         if !Preferences.shared.onboardingCompleted {
+            // Sadece ilk kurulumda otomatik kaydediyoruz — sonrasında
+            // kullanıcı Ayarlar'dan kapatırsa her açılışta sessizce
+            // tekrar açılmasın (2026-09-05 kod incelemesinde bulundu:
+            // registerIfNeeded() her zaman çağrılıyordu, kullanıcının
+            // Ayarlar'daki kapatma tercihini yok sayıyordu).
+            LaunchAtLogin.registerIfNeeded()
             showOnboarding()
         }
     }
@@ -145,7 +150,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func openSettings() {
         if settingsWindow == nil {
-            let hosting = NSHostingController(rootView: SettingsView(historyStore: appState.historyStore))
+            let hosting = NSHostingController(rootView: SettingsView(
+                historyStore: appState.historyStore,
+                onPushToTalkKeyChanged: { [weak self] in self?.appState.refreshPushToTalkKey() }
+            ))
             settingsHostingController = hosting
             let window = makeGlassWindow(
                 size: NSSize(width: 680, height: 640),

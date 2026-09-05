@@ -9,24 +9,7 @@ struct AudioInputDevice: Identifiable, Hashable {
 
 enum AudioDeviceUtility {
     static func listInputDevices() -> [AudioInputDevice] {
-        var propertySize: UInt32 = 0
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDevices,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-
-        guard AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &propertySize) == noErr else {
-            return []
-        }
-
-        let deviceCount = Int(propertySize) / MemoryLayout<AudioDeviceID>.size
-        var deviceIDs = [AudioDeviceID](repeating: 0, count: deviceCount)
-        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &propertySize, &deviceIDs) == noErr else {
-            return []
-        }
-
-        return deviceIDs.compactMap { deviceID in
+        listDeviceIDs().compactMap { deviceID in
             guard hasInputStreams(deviceID) else { return nil }
             guard let uid = stringProperty(deviceID, selector: kAudioDevicePropertyDeviceUID) else { return nil }
             let name = stringProperty(deviceID, selector: kAudioObjectPropertyName) ?? uid

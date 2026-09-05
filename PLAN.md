@@ -1061,6 +1061,37 @@ veya hardcoded sır yok, güvenlik ağı gerçek testte kötü Ollama çıktıs�
   denenecekse önce WhisperKit'in kendi cache davranışı ayrıca
   araştırılmalı.
 
+**2026-09-05, tüm kaynak dosyaları baştan aşağı okuma/temizlik turu**
+(Fatih'in isteği: "gereksiz satırları silelim, boş beleş bir şey
+kalmasın"). 20 Swift dosyasının tamamı tek tek okundu. Bulunan 3 gerçek
+işlevsel hata düzeltildi (kozmetik değil — kullanıcının deneyimini
+sessizce bozan şeyler):
+- **Ayarlar'da basılı-tutma tuşu değiştirilince canlı olarak
+  uygulanmıyordu.** `AppState.refreshPushToTalkKey()` yazılmıştı ama
+  hiçbir yerden çağrılmıyordu (dead code). `SettingsView` → `ShortcutsTab`
+  artık `onChange` ile bunu tetikliyor.
+- **Ayarlar'daki "Ollama sistem promptu" düzenleyicisi hiçbir işe
+  yaramıyordu.** `TextCleaner` kendi sabit (hardcoded) promptunu
+  kullanıyordu, `Preferences.ollamaSystemPrompt`'u hiç okumuyordu.
+  `TextCleaner`'a `systemPrompt` parametresi eklendi, `AppState` artık
+  gerçek tercihi geçiyor.
+- **`LaunchAtLogin.registerIfNeeded()` her açılışta çalışıyordu** —
+  kullanıcı Ayarlar'dan "girişte başlat"ı kapatsa bile bir sonraki
+  açılışta sessizce tekrar açıyordu. Artık sadece ilk kurulumda
+  (onboarding tamamlanmamışken) çağrılıyor.
+
+Ayrıca silinen tamamen ölü/işlevsiz kod: `vocabularyHintsEnabled`
+tercihi ve Ayarlar'daki karşılığı (geri alınan Whisper-hint özelliğine
+bağlıydı, artık hiçbir koda bağlı değildi). `AudioDeviceUtility`'de
+tekrar eden cihaz-listeleme kodu tek fonksiyona indirildi.
+`MenuBarIconController`'daki Faz 3 öncesi tarihli, artık yanlış olan
+bir yorum düzeltildi. Ayarlar'ın Kısayollar sekmesine eksik olan ⌃⌥C
+ve Esc satırları eklendi (bölüm 7'de var ama UI'da hiç görünmüyorlardı).
+
+Temizlik sonrası: sıfır derleyici uyarısı, TODO/FIXME/debug kalıntısı
+yok, tek bir gerçek dikte döngüsüyle (kayıt→transkript→Ollama güvenlik
+ağı) doğrulandı, çökme yok.
+
 **Hâlâ test edilmemiş — bunlar benim tek başıma yapamayacağım, gerçek
 kullanıcı eylemi gerektiriyor:**
 - TR/EN karışık tek cümle testi (dersler.md md.6'nın asıl senaryosu) —

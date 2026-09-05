@@ -1,8 +1,8 @@
 import AppKit
 
 /// Bölüm 6.1 şartnamesindeki durum tablosunun basitleştirilmiş bir
-/// uygulaması. "LLM temizliyor" ve "Model iniyor" durumları Faz 3'te
-/// eklenecek (henüz Ollama/model-indirme entegrasyonu yok).
+/// uygulaması — "LLM temizliyor" ve "model iniyor" için ayrı bir ikon
+/// durumu yok, ikisi de `.transcribing` altında gösteriliyor.
 @MainActor
 final class MenuBarIconController {
     private let button: NSStatusBarButton

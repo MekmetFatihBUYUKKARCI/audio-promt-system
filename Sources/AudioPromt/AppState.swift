@@ -291,6 +291,7 @@ final class AppState {
                     ),
                     ollamaBaseURL: URL(string: prefs.ollamaAddress) ?? URL(string: "http://localhost:11434")!,
                     ollamaModel: prefs.ollamaModel,
+                    systemPrompt: prefs.ollamaSystemPrompt,
                     enabled: prefs.ollamaEnabled
                 )
                 let (finalText, wasLLMCleaned) = await cleaner.clean(rawTranscript: rawText)

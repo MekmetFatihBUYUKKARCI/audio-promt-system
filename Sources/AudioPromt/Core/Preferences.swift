@@ -111,14 +111,13 @@ final class Preferences: ObservableObject {
         static let maxWordLossPercent = "maxWordLossPercent"
         static let minSimilarityPercent = "minSimilarityPercent"
         static let ollamaTimeout = "ollamaTimeout"
-        static let vocabularyHintsEnabled = "vocabularyHintsEnabled"
         static let vocabularyCorrections = "vocabularyCorrections"
         static let pushToTalkMode = "pushToTalkMode"
         static let pushToTalkKey = "pushToTalkKey"
         static let onboardingCompleted = "onboardingCompleted"
     }
 
-    static let defaultOllamaSystemPrompt = """
+    nonisolated static let defaultOllamaSystemPrompt = """
     Aşağıdaki dikte metnini düzelt. Sadece noktalama, büyük harf ve dolgu \
     kelimeleri (ee, ııı, yani, işte) düzelt. ASLA çevirme. ASLA özetleme. \
     ASLA yorum ekleme. Sadece düzeltilmiş metni döndür.
@@ -144,7 +143,6 @@ final class Preferences: ObservableObject {
     @Published var minSimilarityPercent: Double { didSet { defaults.set(minSimilarityPercent, forKey: Key.minSimilarityPercent) } }
     @Published var ollamaTimeout: Double { didSet { defaults.set(ollamaTimeout, forKey: Key.ollamaTimeout) } }
 
-    @Published var vocabularyHintsEnabled: Bool { didSet { defaults.set(vocabularyHintsEnabled, forKey: Key.vocabularyHintsEnabled) } }
     @Published var vocabularyCorrections: [String: String] {
         didSet {
             if let data = try? JSONEncoder().encode(vocabularyCorrections) {
@@ -178,7 +176,6 @@ final class Preferences: ObservableObject {
         minSimilarityPercent = d.object(forKey: Key.minSimilarityPercent) as? Double ?? 70
         ollamaTimeout = d.object(forKey: Key.ollamaTimeout) as? Double ?? 4.0
 
-        vocabularyHintsEnabled = d.object(forKey: Key.vocabularyHintsEnabled) as? Bool ?? true
         if let data = d.data(forKey: Key.vocabularyCorrections),
            let decoded = try? JSONDecoder().decode([String: String].self, from: data) {
             vocabularyCorrections = decoded
