@@ -34,9 +34,23 @@ Swift, izin ihtiyacına göre katmanlanmış mimari, uygulanıyor.
   Carbon API'si desteklemiyor + donanımda çalışmıyor; `⌃⌥Space` "berbat"
   bulunup değiştirildi). Erişilebilirlik izni olmadan çalıştığı
   doğrulandı. Kayıt başlama/bitme sesi var (Ping/Pop, kısık).
-- ⏳ **Faz 2** (sırada) — WhisperKit transkripsiyon + HUD paneli.
+- ⚠️ **Faz 2** (çekirdek tamam, HUD bekliyor) — WhisperKit ile
+  transkripsiyon çalışıyor (`openai_whisper-large-v3-v20240930_turbo`).
+  Görsel HUD paneli henüz yok.
+- ✅ **Faz 4** (plan sırasının önüne geçti) — **En kritik soru
+  cevaplandı: kendinden imzalı sertifika hem Mikrofon hem Erişilebilirlik
+  izninde rebuild'lere karşı kalıcı.** İki eski projeyi öldüren duvar
+  gerçekten aşıldı.
+- ⚠️ **Faz 5** (kısmen, Faz 4 ile birlikte erken yapıldı) — Otomatik
+  yapıştırma çalışıyor (Erişilebilirlik izni + `CGEvent` ile ⌘V, pano
+  eski haline dönüyor). Basılı-tutma, girişte otomatik başlatma,
+  sağlık kontrolü henüz yok.
+- ⏳ **Faz 3** (sırada, hiç başlanmadı) — sözlük, Ollama temizleme +
+  güvenlik ağı, VAD, geçmiş.
 
-Tüm ayrıntı, çıkış kriterleri ve bulunan hatalar `PLAN.md`'de.
+Sistem şu haliyle **günlük kullanılabilir**: `⌃⌥1` → konuş → metin
+otomatik yerine düşüyor. Tüm ayrıntı, çıkış kriterleri ve bulunan
+hatalar `PLAN.md`'de.
 
 **Her oturumda önce `PLAN.md`'ye bak, orayı güncelle. Her faz
 tamamlandığında bu dosyanın "Durum" bölümü de kısa özetle güncellenir —
@@ -49,9 +63,10 @@ bağımlı oldukları için öldü. Yeni plan izni en sona bırakır:
 
 - Kısayol için **Carbon `RegisterEventHotKey`** kullanılır — `CGEventTap`
   ve `NSEvent` global monitor'ün aksine **Erişilebilirlik izni istemez**.
-- Metin v1'de **panoya** yazılır (izin gerekmez), Fatih ⌘V basar.
-- Otomatik yapıştırma ancak imza sorunu çözülünce eklenir; çözülemezse
-  sistem yine tam kullanılabilir kalır.
+- Metin panoya yazılır (izin gerekmez); Erişilebilirlik izni verilmişse
+  otomatik ⌘V da basılır (2026-09-05'te doğrulandı: imza sorunu gerçekten
+  çözüldü). İzin yoksa/geri alınırsa sessizce panoya yazma tek başına
+  yeterli kalır, sistem hiç kırılmaz.
 
 ## Bilgi kaynakları
 

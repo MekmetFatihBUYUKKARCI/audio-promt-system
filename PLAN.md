@@ -350,23 +350,49 @@ Float32), genlik paterni gerçek ses ✅.
 
 ---
 
-### Faz 2 — Transkripsiyon ve HUD (hedef: 1–2 gün)
+### Faz 2 — Transkripsiyon ⚠️ ÇEKİRDEK TAMAMLANDI, HUD BEKLİYOR (2026-09-05)
 
-1. WhisperKit'i SPM ile ekle. İlk açılışta model indirme + ilerleme
-   göstergesi.
-2. Kayıt bitince transkribe et. **`language` parametresini verme**
-   (dersler.md md.6).
-3. Sonucu `NSPasteboard`'a yaz.
-4. HUD panelini yaz — bölüm 6'daki şartnameye göre.
-5. **Odak testi (kritik):** Claude Code terminalinde yazarken kısayola bas,
-   konuş, bitir. Terminaldeki imleç yanıp sönmeye devam ediyor mu? ⌘V
-   basınca metin terminale mi düşüyor? Odak kaçıyorsa `NSPanel`
-   ayarlarını düzelt, geçmeden ilerleme.
-6. `⌃⌥V` — son transkripti tekrar panoya koy.
+**Yapılan:** WhisperKit SPM ile eklendi (`argmaxinc/WhisperKit`, `0.18.0`
+çözümlendi). `Core/Transcriber.swift` — model bir kez yüklenip bellekte
+tutuluyor. Model: **`openai_whisper-large-v3-v20240930_turbo`** (632MB) —
+kısa isim `"large-v3-turbo"` repo'da eşleşmiyordu, tam model klasör adı
+kullanılmalı. `Core/TextDelivery.swift` — panoya yaz + (Faz 5'ten öne
+çekilen) otomatik ⌘V. `⌃⌥V` son transkripti tekrar teslim ediyor.
 
-**Çıkış kriteri:** Terminale odaklıyken konuş → ⌘V → metin terminale
-düşüyor, odak hiç kaçmadı. TR/EN karışık bir cümle doğru çıkıyor.
-**Bu noktada sistem gerçekten kullanılabilir hale gelmiştir.**
+**Kritik bulgu — dersler.md md.6 WhisperKit için eksik çıktı:**
+`language: nil` bırakmak WhisperKit'te TEK BAŞINA otomatik algılama
+yapmıyor. Varsayılan `usePrefillPrompt=true` olduğu için `detectLanguage`
+de varsayılan `false`'a düşüyor ve dil belirtilmezse **İngilizce'ye
+sabitleniyor**. Çözüm: `DecodingOptions(language: nil, detectLanguage:
+true)` açıkça verilmeli. (dersler.md md.6, orijinal Python `openai-whisper`
+kütüphanesi için doğruydu, WhisperKit'in Swift sarmalayıcısı farklı
+varsayılan seçmiş.)
+
+**Test bulgusu:** "base" modelle sessiz/çok kısa girişte tamamen yanlış
+dilde saçma metin üretti (halüsinasyon — Arapça harflerle anlamsız
+çıktı). `large-v3-turbo`'ya geçilince aynı sessiz girişte boş string
+döndü (doğru davranış). **Ders:** küçük modeller zayıf sinyalde
+halüsinasyon riski taşıyor, teslim modeli asla `base` olmamalı.
+
+**Gerçek konuşmayla test edildi:** Türkçe bir tekerleme
+("Bir çıvciv, bir çıvciv ve gel veralar berber dükkânı açalım demiş.")
+`large-v3-turbo` ile doğru ve anlaşılır çıktı, panoya yazıldı.
+
+**Odak testi geçti:** Claude Code terminaline odaklıyken dikte edildi,
+otomatik yapıştırma metni doğru yere düşürdü — odak hiç kaçmadı (henüz
+HUD olmadığı için zaten çalınacak bir şey yok, ama Faz 5'in odak
+gereksinimi de böylece dolaylı doğrulanmış oldu).
+
+**Eksik kalan (Faz 2'nin asıl HUD kısmı):** Görsel HUD paneli (bölüm 6.3
+şartnamesi — dalga formu, durum göstergeleri) henüz yazılmadı. Şu an
+tek geri bildirim: menü çubuğu ikonu (durağan) + Ping/Pop sesleri. HUD
+ayrı bir oturumda ele alınacak.
+
+**Çıkış kriteri (orijinal metin, referans için):** Terminale odaklıyken
+konuş → metin terminale düşüyor, odak hiç kaçmadı ✅. TR/EN karışık bir
+cümle doğru çıkıyor ✅ (Türkçe test edildi; TR/EN karışık cümle ayrıca
+test edilmedi, bkz. bölüm 15). **Sistem şu haliyle gerçekten
+kullanılabilir.**
 
 ---
 
@@ -398,68 +424,67 @@ korunuyor.
 
 ---
 
-### Faz 4 — Kalıcılık: imza ve TCC (hedef: yarım gün + bekleme)
+### Faz 4 — Kalıcılık: imza ve TCC ✅ TAMAMLANDI (2026-09-05)
 
-Bu faz, önceki iki projeyi öldüren duvarı yıkar. **Yol 1'in imza kısmı
-(kendinden imzalı kararlı sertifika) Faz 0'a öne çekildi** ve o zamandan
-beri Faz 1-3'ün onlarca rebuild'inden geçti — **Mikrofon izni** için
-kararlılık zaten kanıtlı. Ama **Erişilebilirlik** izni Faz 1-3'te hiç
-istenmedi (bilerek — bkz. bölüm 1), o yüzden asıl sınav burada:
+**Önceki iki projeyi öldüren duvar gerçekten aşıldı.** Fatih Faz 2
+testleri sırasında sabırsızlandı ("ses kaydı otomatik yazılsın istiyorum,
+ayrı kısayola basmak istemiyorum") ve Faz 5'in otomatik yapıştırma
+özelliğini hemen istedi — bu da Faz 4'ün asıl testini erkene çekmeye
+zorladı, plan sırası dışına çıkıldı ama sonuç net:
 
-1. Sistem Ayarları → Erişilebilirlik'te Audio Promt'a manuel izin ver.
-2. Minik bir sınama fonksiyonuyla (Faz 5'in tam özelliğini yazmadan önce)
-   doğrula: `AXIsProcessTrustedWithOptions` `true` dönüyor mu, kısa bir
-   `CGEventTapCreate` çağrısı nil dönmüyor mu?
-3. Kodda ufak bir değişiklik yap, rebuild et (aynı imza kimliğiyle),
-   tekrar kontrol et — izin hâlâ duruyor mu?
-4. **Tuttuysa:** Faz 4 bitti, Faz 5'e geç, orada tam özelliği yaz.
-   **Tutmadıysa:** Yol 2'ye geç (aşağıda).
+1. Fatih Sistem Ayarları → Erişilebilirlik'ten Audio Promt'a manuel izin
+   verdi.
+2. Otomatik yapıştırma (Faz 5 madde 1-2, aşağıda) hemen çalıştı — gerçek
+   konuşmayla test edildi, doğru metin doğru yere düştü.
+3. **Kararlılık testi:** kodda değişiklik yapılıp rebuild edildi
+   (CDHash `cf779127...` → `3bc9928e...`, gerçek bir farklı derleme),
+   izin **yeniden verilmeden** otomatik yapıştırma yine çalıştı.
+4. **Sonuç: Yol 1 (kendinden imzalı kararlı sertifika, Faz 0'da kurulan)
+   hem Mikrofon hem Erişilebilirlik izninde rebuild'lere karşı kalıcı.**
+   Yol 2 (kaçış planı) hiç gerekmedi.
 
-**Yol 2 — Kaçış planı (kalıcı, ücretsiz — tek alternatif)**
+Fatih'in gözlemi: küçük bir gecikme var (kabul edilebilir), ilk deneme
+daha yavaştı (WhisperKit modelinin süreç belleğine yeniden yüklenmesi —
+her `open` sonrası beklenen davranış, bkz. bölüm 11 madde 2).
 
-> **Ücretli hiçbir yol yok ve kullanılmayacak.** ($99/yıl Apple
-> Developer Program + Developer ID imzası topluluk araştırmasında
-> "kanıtlanmış çözüm" olarak bulunmuştu, ama Fatih bunu istemiyor —
-> sistemi satın almak isteseydi zaten hazır bir ürün alırdı. Bu proje
-> tamamen ücretsiz kalacak, 2026-09-05'te kesin karar. dersler.md'deki
-> "ücretsiz Apple ID ile kararlı imza" fikrinin neden yetersiz kaldığı
-> not olarak duruyor ama bir seçenek olarak sunulmuyor.
-
-Faz 0–3 zaten Erişilebilirlik izni olmadan çalışıyor. Sistem tam
-fonksiyonel kalır, tek fark: otomatik yapıştırma yerine Fatih ⌘V basar.
-**Bu kabul edilebilir bir son durumdur, başarısızlık değil** — Faz 5
-otomatik yapıştırma özelliğini atlar, sistem v1 (pano + manuel ⌘V)
-haliyle kalıcı olarak kullanılır.
-
-Geliştirme sırasındaki hızlı çözüm (topluluk-arastirmasi.md md.2):
-```
-tccutil reset Accessibility com.fatih.audiopromt
-```
-sonra uygulamayı kapat/aç — kalıcı değil ama günlük kullanımda izin
-sıfırlanınca hızlı tekrar-izin vermek için işe yarar.
-
-**Çıkış kriteri:** Ya izin yeniden derlemelerden sağ çıkıyor (Faz 5'e
-geçilir), ya da Yol 2 bilinçli olarak seçildi ve karar bu dosyaya
-yazıldı (sistem v1 halinde kalıcılaşır).
+**Çıkış kriteri karşılandı:** İzin yeniden derlemelerden sağ çıktı.
+Yol 2'ye hiç gerek kalmadı — tccutil reset dahi kullanılmadı.
 
 ---
 
-### Faz 5 — Otomatik yapıştırma ve cila (Faz 4'te izin kararlı çıktıysa)
+### Faz 5 — Otomatik yapıştırma ⚠️ KISMEN TAMAMLANDI (2026-09-05, Faz 2/4 ile birlikte)
 
-1. Erişilebilirlik izni kontrolü: `AXIsProcessTrustedWithOptions`.
-2. Yapıştırma: eski pano içeriğini sakla → metni yaz → `CGEvent` ile ⌘V
-   → 150 ms sonra eski panoyu geri yükle.
-3. **Sağlık kontrolü (topluluk-arastirmasi.md md.4):** `CGEvent.tapCreate`
-   nil dönmese bile callback hiç tetiklenmeyebilir. 5 saniyede bir
-   `tapIsEnabled()` kontrol et, kapalıysa tap'i yeniden kur.
-4. **Basılı-tutma (push-to-talk)** — artık `CGEventTap` kullanılabilir.
-   Tuş: **Sağ Option (keycode 61)**, dersler.md md.2'ye göre. Ayarlarda
-   toggle/hold seçimi.
-5. Girişte başlatma: `SMAppService.mainApp.register()` (launchd plist
-   elle yazma, dersler.md'deki launchd sorunlarından kaçın).
+**Yapılan (madde 1-2, Faz 4 testiyle birlikte erken uygulandı):**
+- `TextDelivery.requestAccessibilityTrustIfNeeded()` — açılışta
+  `AXIsProcessTrustedWithOptions` çağrısı, Erişilebilirlik listesinde
+  uygulamanın görünmesini tetikliyor.
+- `TextDelivery.deliver(_:)` — izin varsa: eski pano içeriğini sakla →
+  metni yaz → `CGEvent` ile ⌘V bas → 150 ms sonra eski panoyu geri
+  yükle. İzin yoksa: sessizce v1'e (sadece panoya yaz) düşer, sistem
+  yine kullanılabilir kalır.
+- `⌃⌥V` de artık `deliver()` kullanıyor — son transkripti tekrar
+  otomatik teslim ediyor (sadece panoya koymuyor).
+- Gerçek konuşmayla ve rebuild sonrası test edildi, çalıştığı doğrulandı
+  (bkz. Faz 4).
 
-**Çıkış kriteri:** Konuş → metin kendiliğinden terminale düşüyor, pano
-eski haline dönüyor, yeniden başlatmadan sonra da çalışıyor.
+**Eksik kalan (henüz yapılmadı):**
+3. **Sağlık kontrolü** (topluluk-arastirmasi.md md.4): `CGEvent.tapCreate`
+   nil dönmese bile callback tetiklenmeyebilir riski için periyodik
+   `tapIsEnabled()` kontrolü — henüz yok (şu an `CGEventTap` zaten
+   kullanılmıyor, `CGEvent.post` ile tek seferlik sentetik tuş basımı
+   yapılıyor, bu risk büyük ölçüde bu maddeyi gereksiz kılıyor olabilir,
+   ama push-to-talk için Faz 5 madde 4'e geçildiğinde tekrar gözden
+   geçirilmeli).
+4. **Basılı-tutma (push-to-talk)** — henüz yok, hâlâ sadece `⌃⌥1`
+   aç/kapa. Tuş: **Sağ Option (keycode 61)** planlandığı gibi duruyor.
+5. **Girişte otomatik başlatma** (`SMAppService.mainApp.register()`) —
+   henüz yok, uygulama hâlâ elle (`make run` / `open`) başlatılıyor.
+
+**Çıkış kriteri (orijinal):** Konuş → metin kendiliğinden yerine düşüyor
+✅. Pano eski haline dönüyor ✅ (150ms sonra restore, kodda var, gerçek
+testte doğrulanmadı — küçük bir doğrulama borcu). Yeniden başlatmadan
+sonra da çalışıyor — **henüz yok** (madde 5 eksik olduğu için bu kısım
+test edilmedi).
 
 ---
 
@@ -818,7 +843,19 @@ Bunlar teknik değil, tercih kararı — ben veremem:
 
 ## 15. Sıradaki adım
 
-**Faz 0 ve Faz 1 tamamlandı.** Sıradaki: **Faz 2** — WhisperKit ile
-transkripsiyon ve HUD paneli. Faz 2'nin asıl sınavı: Claude Code
-terminaline odaklıyken dikte edip ⌘V ile metnin doğru yere düşmesi,
-odağın hiç kaçmaması.
+**Durum (2026-09-05):** Faz 0, 1, 4 tamamlandı. Faz 2 ve 5 kısmen
+tamamlandı (çekirdek transkripsiyon + otomatik yapıştırma çalışıyor,
+gerçek konuşmayla ve rebuild sonrası test edildi). Sistem şu haliyle
+**günlük kullanılabilir**: `⌃⌥1` → konuş → metin otomatik yerine düşüyor.
+
+**Eksik kalanlar, öncelik sırasıyla:**
+1. **HUD paneli** (Faz 2 madde 4, bölüm 6.3) — şu an hiç görsel geri
+   bildirim yok, sadece Ping/Pop sesi ve durağan menü çubuğu ikonu.
+2. **Faz 3 — kalite katmanı** — sözlük, Ollama ile temizleme (+ güvenlik
+   ağı), VAD, geçmiş. Hiç başlanmadı.
+3. **Faz 5'in kalanı** — sağlık kontrolü, basılı-tutma (Sağ Option),
+   girişte otomatik başlatma (`SMAppService`).
+4. **TR/EN karışık cümle testi** — sadece düz Türkçe test edildi, karışık
+   cümle (dersler.md md.6'nın asıl senaryosu) henüz denenmedi.
+5. Menü çubuğu durum ikonları (bölüm 6.1) — şu an sabit mikrofon ikonu,
+   kayıt/transkripsiyon durumuna göre değişmiyor.

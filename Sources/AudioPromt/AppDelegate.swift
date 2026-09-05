@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             accessibilityDescription: "Audio Promt"
         )
         statusItem.menu = buildMenu()
+        TextDelivery.requestAccessibilityTrustIfNeeded()
         appState.start()
     }
 
