@@ -110,3 +110,13 @@ Private repo: **github.com/MekmetFatihBUYUKKARCI/audio-promt-system**
 - **Proje kökü kesin olarak `~/audio promt/`.** Başka hiçbir yerde
   (MehmetOS kasası dahil) kopya tutulmaz.
 - Yukarıdaki **dosya senkron protokolü** her zaman geçerli.
+- **PLAN.md'nin araştırılıp yazılmış özgün içeriğini (bölüm 1-8'deki
+  mimari/şartname metni) Fatih'in onayı olmadan değiştirme.** (2026-09-05
+  dersi: bölüm 6.4/6.5'e "yazılmayacak" notu eklerken önce sormadan
+  yazmıştım, Fatih'in tepkisi: "planı zırt pırt güncelleme, onay almadan
+  önceden oluşturduğumuza dokunma, bir ton araştırma yaptık.") Durum/
+  ilerleme takibi (bölüm 15, faz başlıklarındaki ✅/⏳ işaretleri, "Durum"
+  bölümleri) her zamanki gibi güncellenir — asıl kısıtlanan, zaten
+  araştırılıp yazılmış tasarım/şartname metnini onaysız değiştirmek/
+  silmek. Bir karar (örn. "bu bölüm yazılmayacak") ancak Fatih açıkça
+  söyledikten SONRA plana işlenir, kendiliğinden değil.
