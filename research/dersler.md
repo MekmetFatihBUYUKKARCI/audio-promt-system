@@ -8,16 +8,32 @@ tek başına ekleme, derlenmiş Mach-O launcher), hiçbiri tutmadı. Terminalden
 direkt çalıştırınca güven vardı (`AXIsProcessTrusted=True`), ama `.app`/
 `launchd` üzerinden başlatılan hiçbir süreç bunu miras almadı.
 
+**Kök neden sonradan bulundu** (`topluluk-arastirmasi.md` md.1): ad-hoc
+imzada TCC uygulamayı yalnızca kod digest'i (**CDHash**) ile tanıyor, CDHash
+her derlemede değişiyor, izin sessizce düşüyor. Çözüm: **kararlı bir imza
+kimliği**.
+
+> ⚠️ **DÜZELTME (2026-09-05):** Aşağıdaki "ücretsiz Apple ID yeter" fikri
+> **yanlış çıktı.** Ücretsiz Apple ID'nin verdiği "Personal Team" imzası bu
+> kararlılığı sağlamıyor. Kanıtlanmış çözüm ücretli Developer ID
+> ($99/yıl) + notarization. Ücretsiz denenecek alternatif: Anahtar
+> Zinciri'nden **kendinden imzalı kararlı kod imzalama sertifikası** —
+> mantık doğru ama henüz doğrulanmadı (bkz. `PLAN.md` Faz 4, Yol 1).
+
 **Sıfırdan başlarken:** Bu ihtimali en başta ele al, sona bırakma.
-- Önce gerçek bir (ücretsiz) Apple ID ile Xcode'a giriş yapıp kararlı bir
-  "Apple Development" imza kimliği edinmeyi dene — ad-hoc yerine bu, TCC'nin
-  daha güvenilir bulduğu yol (VoiceInk'in `make local`'ı da bunu tercih
-  ediyordu).
+- ~~Önce gerçek bir (ücretsiz) Apple ID ile Xcode'a giriş yapıp kararlı bir
+  "Apple Development" imza kimliği edinmeyi dene~~ — bkz. yukarıdaki
+  düzeltme, bu yol yetmiyor.
 - Ya da tamamen native Swift/Xcode ile yaz (Python+PyObjC+script-exec
   zincirinden kaçın) — VoiceInk'in kendisi native'di ve derleyip
   çalıştırdığımızda (kod açısından) sorunsuzdu, sorun onboarding'indeydi.
-- Global klavye kancası gerektiren HERHANGİ bir yaklaşım bu duvara çarpar —
-  repo/dil değiştirmek çözmez, kök sebep macOS'un kendisi.
+- ~~Global klavye kancası gerektiren HERHANGİ bir yaklaşım bu duvara
+  çarpar~~ — **kısmen yanlış.** `CGEventTap` ve `NSEvent` global monitor
+  izin ister, ama Carbon'un **`RegisterEventHotKey`**'i istemez (ham tuş
+  olaylarını biz dinlemiyoruz, sistem tek bir kombinasyonu yakalayıp bize
+  callback gönderiyor). Bedeli: çıplak modifier'a basılı tutma
+  (push-to-talk) yapılamaz, gerçek bir kombinasyon gerekir. Yeni planın
+  omurgası bu (bkz. `PLAN.md` bölüm 1).
 
 ## 2. Klavye donanımı — varsayım yapma, önce kontrol et
 Fatih'in klavyesi **Logitech K250** (Bluetooth, Apple değil). Apple'ın

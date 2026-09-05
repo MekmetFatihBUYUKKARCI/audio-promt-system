@@ -1,47 +1,80 @@
-# Sesli Prompt Sistemi
+# Sesli Prompt Sistemi — "Fısıltı"
 
 Amaç: Fatih'in yazabileceği her yere (özellikle Claude Code terminaline)
-klavye yerine **sesle** prompt/metin girebilmesi. Referans: OnurTirpan'ın
-videosunda kullandığı **Wispr Flow** (kapalı kaynak, ücretli, Windows'ta
-sistem tepsisinden çalışıyor, "Paste last transcript" ile terminale metin
-basıyor).
+klavye yerine **sesle** prompt/metin girebilmesi. Referans: Wispr Flow
+(kapalı kaynak, ücretli, bulut tabanlı).
 
-## Karar (2026-09-05, güncel)
-İlk denenen **VoiceInk** (Swift/Xcode) terk edildi — onboarding sihirbazı
-dışarıdan verdiğimiz config'i görmezden geliyordu, Fatih'in "kontrolüm
-sınırlı" tepkisi üzerine tamamen kaldırıldı (detay: PLAN.md'nin "DURDU"
-bölümü). Yerine **whisper-dictate** (github.com/Scarlettofu/whisper-dictate,
-MIT, tek Python dosyası, MLX Whisper) seçildi — basit, opak state machine'i
-yok, tamamen bizim elimizde. Kaynak kod satır satır incelendi, 4 gerçek hata
-bulunup düzeltildi, kendi kendine (sentetik tuş olayıyla) uçtan uca test
-edilip **çalıştığı kanıtlandı**. Detay: `research/kod-incelemesi.md`.
+## ⚠️ DOSYA SENKRON PROTOKOLÜ — her oturumda geçerli
 
-Fatih'in makinesi: Apple Silicon (arm64), macOS 26.6.2. Klavyesi **Logitech
-K250** (Apple değil) — bu önemli, kodda buna göre özel bir düzeltme var.
+`CLAUDE.md` ve `AGENTS.md` **tek ve aynı dosyadır**. `AGENTS.md`,
+`CLAUDE.md`'ye sembolik link (`AGENTS.md -> CLAUDE.md`).
 
-## Durum / canlı plan
-Ayrıntılı adım adım plan ve ilerleme: **`PLAN.md`** — her oturumda önce
-oraya bak, orayı güncelle. Özet: sistem çalışıyor (kanıtlı), kalan tek engel
-macOS Erişilebilirlik izninin `.app`'e yansımaması — kod değil, Fatih'in tek
-bir tıklaması gerekiyor (`research/kod-incelemesi.md` sonunda kesin adımlar).
+**Kural: birine yazılan her şey diğerine de yazılmış olmak zorunda.**
+Sembolik link bunu dosya sistemi seviyesinde otomatik sağlar — birini
+düzenlemek ikisini birden düzenler. Elle senkron gerekmez, **ama**:
+
+- Sembolik linki asla normal dosyayla değiştirme.
+- Şüphelenirsen doğrula: `ls -la AGENTS.md` çıktısı `-> CLAUDE.md`
+  göstermeli ve `md5 -q CLAUDE.md AGENTS.md` iki özdeş hash vermeli.
+- Link kopmuşsa onar: `ln -sf CLAUDE.md AGENTS.md` (önce hangi dosyanın
+  güncel içeriği taşıdığını kontrol et, onu `CLAUDE.md` yap).
+
+Aynı desen vault kökünde de kullanılıyor.
+
+## Durum (2026-09-05)
+
+İki yaklaşım denendi ve terk edildi:
+- **VoiceInk** (Swift fork) — onboarding sihirbazı dışarıdan verilen
+  config'i yok saydı, kontrol elimizde değildi.
+- **whisper-dictate** (Python fork) — kod tamamen çalışır hale getirildi
+  ve sentetik testle kanıtlandı, ama macOS Erişilebilirlik izni hiçbir
+  şekilde `.app`'e yansımadı (TCC sorunu, kod hatası değil).
+
+Şu an **üçüncü ve son yaklaşımın planı hazır**: sıfırdan native Swift,
+izin ihtiyacına göre katmanlanmış mimari. Tüm ayrıntı `PLAN.md`'de.
+
+**Her oturumda önce `PLAN.md`'ye bak, orayı güncelle.**
+
+## Planın temel içgörüsü
+
+Önceki iki deneme, macOS Erişilebilirlik (TCC) iznine birinci günde
+bağımlı oldukları için öldü. Yeni plan izni en sona bırakır:
+
+- Kısayol için **Carbon `RegisterEventHotKey`** kullanılır — `CGEventTap`
+  ve `NSEvent` global monitor'ün aksine **Erişilebilirlik izni istemez**.
+- Metin v1'de **panoya** yazılır (izin gerekmez), Fatih ⌘V basar.
+- Otomatik yapıştırma ancak imza sorunu çözülünce eklenir; çözülemezse
+  sistem yine tam kullanılabilir kalır.
+
+## Bilgi kaynakları
+
+- **`PLAN.md`** — canlı, tek doğruluk kaynağı. Mimari şema, fazlar,
+  arayüz şartnamesi, kısayol haritası, riskler, karar noktaları.
+- **`research/dersler.md`** — önceki iki denemeden çıkan yol gösterici
+  dersler (TCC, klavye donanımı, PyObjC tuzakları, LLM güvenlik ağı).
+- **`research/topluluk-arastirmasi.md`** — internet/GitHub/forum
+  araştırması: TCC'nin kök nedeni (CDHash kararsızlığı), çözümü, ve
+  aynı sorunu çözmüş açık kaynak projeler.
+
+## Makine (doğrulanmış)
+
+Apple Silicon (arm64), macOS 26.6.2, Xcode kurulu (Swift 6.3.3),
+Ollama + `qwen2.5:3b` çalışıyor. **Kod imzalama kimliği yok**
+(`0 valid identities`). Klavye jenerik Bluetooth (Apple değil) — Globe/Fn
+tuşuna güvenilmez. Mikrofon: dahili + ROG Strix Go USB kulaklık.
 
 ## GitHub
+
 Private repo: **github.com/MekmetFatihBUYUKKARCI/audio-promt-system**
-(`origin` olarak bağlı, lokal `main` dalında commit'ler atılıyor). Sadece
-bizim dosyalarımız takip edilir (`CLAUDE.md`, `AGENTS.md`, `PLAN.md`,
-`research/`) — vendored `src/whisper-dictate/` kaynağı `.gitignore`'da.
+(`origin` olarak bağlı, lokal `main` dalında commit'ler atılıyor).
 
 ## Sabit kurallar
+
 - **Otomatik `git push` yok.** Remote bağlı ve lokal commit'ler atılıyor
   ama uzağa göndermek sadece Fatih söyleyince.
-- Bu projenin teknik detayı Jarvis'in genel hafızasına (`🔮 850-Companion`,
-  `knowledge/`) otomatik yüklenmez, sadece bu klasörde yaşar.
-
-## Notlar dosyası
-`research/notlar.md` — video araştırması + güvenlik incelemesi (bitti).
-`PLAN.md` — canlı, sürekli güncellenen adım listesi.
-
-## Dosya senkronu
-Bu dosya (`CLAUDE.md`) tek kaynak. `AGENTS.md` ona sembolik link —
-biri değişince diğeri otomatik değişmiş olur (dosya sistemi seviyesinde,
-elle senkron gerekmez). Vault kökünde de aynı desen kullanılıyor.
+- Bu projenin teknik detayı Jarvis'in genel hafızasına
+  (`🔮 850-Companion`, `knowledge/`) otomatik yüklenmez, sadece bu
+  klasörde yaşar.
+- **Proje kökü kesin olarak `~/audio promt/`.** Başka hiçbir yerde
+  (MehmetOS kasası dahil) kopya tutulmaz.
+- Yukarıdaki **dosya senkron protokolü** her zaman geçerli.
