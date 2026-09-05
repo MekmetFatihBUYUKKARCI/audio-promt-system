@@ -233,7 +233,7 @@ geçilmez. Her faz sonunda commit atılır (push yok — bkz. Kesin kurallar).
 ### Faz 0 — İskelet (hedef: yarım gün)
 
 1. **Xcode IDE açılmıyor.** `swift package init --type executable` ile
-   SPM paketi kur (proje adı Faz 0 öncesi netleşince — bkz. bölüm 12).
+   SPM paketi kur, `src/AudioPromt/` altına.
    `Package.swift`'te `platforms: [.macOS(.v14)]`, framework bağımlılıkları
    (AppKit, SwiftUI, AVFoundation, Carbon) sistem kütüphaneleri olarak
    linklenir, ek paket gerekmez.
@@ -243,17 +243,31 @@ geçilmez. Her faz sonunda commit atılır (push yok — bkz. Kesin kurallar).
      için mikrofonu kullanır. Ses cihazınızdan çıkmaz."
 3. `AppDelegate` + `NSStatusItem` menü çubuğu ikonu (`mic` SF Symbol).
 4. Menüden çıkılabiliyor.
-5. **Makefile** yaz — üç hedef yeterli:
+5. **Kararlı imza kimliği — Faz 4'ten öne çekildi (2026-09-05 düzeltmesi):**
+   Ad-hoc imza (`codesign -s -`) her derlemede CDHash'i değiştirir; bu
+   sadece Erişilebilirlik'i değil **Mikrofon** iznini de sıfırlar —
+   Faz 1-3 boyunca her `make run` sonrası izin yeniden sorulurdu. Bunun
+   yerine hemen şimdi: Anahtar Zinciri Erişimi → Sertifika Yardımcısı →
+   **kendinden imzalı, "Kod İmzalama" türü** bir sertifika üret
+   ("Audio Promt Local Signing", ücretsiz, 5 dakika). Faz 4 Yol 1'in
+   mantığı burada uygulanır: sabit sertifika → designated requirement
+   artık CDHash yerine leaf hash'e dayanır → rebuild'lerde bozulmaz.
+   Bu şekilde Faz 1-3'ün onlarca rebuild'i, Faz 4'ün en kritik
+   belirsizliğini ("tutuyor mu?") bedavaya, haftalar önceden test etmiş
+   olur.
+6. **Makefile** yaz — üç hedef yeterli:
    - `make run` — `swift build` + `.app` paketini
      `Contents/MacOS/`, `Contents/Resources/`, `Info.plist` ile elle kur
-     + terminalden başlat (izin mirası için, topluluk-arastirmasi.md md.3)
-   - `make sign` — Faz 4'te dolduracak, şimdilik ad-hoc (`codesign -s -`)
+     + `codesign -s "Audio Promt Local Signing"` + terminalden başlat
+     (izin mirası için, topluluk-arastirmasi.md md.3)
+   - `make sign` — imzalama mantığı burada, madde 5'teki kimlikle
    - `make clean`
-6. Git: proje `~/audio promt/` altına, `src/AudioPromt/`. `.gitignore`'a
+7. Git: proje `~/audio promt/` altına, `src/AudioPromt/`. `.gitignore`'a
    `.build/`, indirilen modeller.
 
 **Çıkış kriteri:** Menü çubuğunda ikon var, tıklanınca menü açılıyor,
-Dock'ta ikon yok, ⌘Tab'de görünmüyor.
+Dock'ta ikon yok, ⌘Tab'de görünmüyor. İki kez arka arkaya `make run`
+sonrası `codesign -dv` aynı imza kimliğini gösteriyor.
 
 ---
 
@@ -301,7 +315,7 @@ düşüyor, odak hiç kaçmadı. TR/EN karışık bir cümle doğru çıkıyor.
 
 1. **Sözlük** (`vocabulary.json`): `{"yanlış": "doğru"}` eşlemeleri.
    Başlangıç seti: `Claude Code`, `Ollama`, `Whisper`, `Xcode`, `Swift`,
-   `React`, `commit`, `terminal`, `Fatih`. Hem regex sonrası düzeltme
+   `React`, `commit`, `repo`, `terminal`, `Fatih`. Hem regex sonrası düzeltme
    olarak hem de Whisper'a initial prompt olarak beslenir.
 2. **Ollama temizleme** — `POST localhost:11434/api/generate`, model
    `qwen2.5:3b`. Sistem promptu: "Aşağıdaki dikte metnini düzelt. Sadece
@@ -327,38 +341,31 @@ korunuyor.
 
 ### Faz 4 — Kalıcılık: imza ve TCC (hedef: yarım gün + bekleme)
 
-Bu faz, önceki iki projeyi öldüren duvarı yıkar. Sırasıyla denenecek,
-biri tuttuğunda dur:
+Bu faz, önceki iki projeyi öldüren duvarı yıkar. **Yol 1'in imza kısmı
+(kendinden imzalı kararlı sertifika) Faz 0'a öne çekildi** ve o zamandan
+beri Faz 1-3'ün onlarca rebuild'inden geçti — **Mikrofon izni** için
+kararlılık zaten kanıtlı. Ama **Erişilebilirlik** izni Faz 1-3'te hiç
+istenmedi (bilerek — bkz. bölüm 1), o yüzden asıl sınav burada:
 
-**Yol 1 — Kendinden imzalı kararlı sertifika (ücretsiz, önce bunu dene)**
-
-Kök neden (topluluk-arastirmasi.md md.1): ad-hoc imzada TCC uygulamayı
-sadece **CDHash** ile tanır, CDHash her derlemede değişir, izin sessizce
-düşer. Çözüm sabit bir kimlik.
-
-1. Anahtar Zinciri Erişimi → Sertifika Yardımcısı → **Kendinden imzalı,
-   türü "Kod İmzalama"** bir sertifika üret ("Audio Promt Local Signing").
-2. Makefile'daki `make sign` hedefinde `codesign -s "Audio Promt Local
-   Signing" ...` kullan. Her derlemede aynı sertifika kullanılır.
-3. TCC'nin sakladığı designated requirement artık CDHash yerine
-   **sertifikanın leaf hash'i**ne dayanır — bu yeniden derlemede
-   değişmez.
-4. Test: Erişilebilirlik iznini ver → uygulamayı sil → yeniden derle →
-   kur → izin hâlâ duruyor mu?
-
-> Bu yolun işe yarayacağı **kanıtlanmadı**, mantık doğru ama doğrulanmadı.
-> Faz 4'ün ilk işi bunu bir saat içinde test edip cevabı öğrenmek.
+1. Sistem Ayarları → Erişilebilirlik'te Audio Promt'a manuel izin ver.
+2. Minik bir sınama fonksiyonuyla (Faz 5'in tam özelliğini yazmadan önce)
+   doğrula: `AXIsProcessTrustedWithOptions` `true` dönüyor mu, kısa bir
+   `CGEventTapCreate` çağrısı nil dönmüyor mu?
+3. Kodda ufak bir değişiklik yap, rebuild et (aynı imza kimliğiyle),
+   tekrar kontrol et — izin hâlâ duruyor mu?
+4. **Tuttuysa:** Faz 4 bitti, Faz 5'e geç, orada tam özelliği yaz.
+   **Tutmadıysa:** aşağıdaki Yol 2 veya Yol 3'e karar ver.
 
 **Yol 2 — Apple Developer Program ($99/yıl)**
 
-Yol 1 tutmazsa, topluluk araştırmasının kanıtlanmış çözümü: **Developer ID
-Application sertifikası + notarization**. Sabit `TeamIdentifier` verir, TCC
-bunu güncellemeler arasında tanır. VS Code, Slack, Discord aynı yolu
+Topluluk araştırmasının kanıtlanmış çözümü: **Developer ID Application
+sertifikası + notarization**. Sabit `TeamIdentifier` verir, TCC bunu
+güncellemeler arasında tanır. VS Code, Slack, Discord aynı yolu
 kullanıyor.
 
 ⚠️ **dersler.md md.1'de yazan "ücretsiz Apple ID ile kararlı imza" fikri
 yanlış çıktı.** Ücretsiz Apple ID'nin verdiği "Personal Team" imzası bu
-kararlılığı sağlamıyor. → Bu düzeltme dersler.md'ye işlenecek.
+kararlılığı sağlamıyor.
 
 **Bu, Fatih'in kararı — para harcaması gerekiyor, ben karar veremem.**
 
@@ -515,8 +522,9 @@ boyutlandırılamaz.
 - İki sütunlu `Table`: "Duyulan" → "Yazılacak"
 - `Button` **+** / **−** altta
 - `Toggle` — Terimleri Whisper'a ipucu olarak da ver (varsayılan açık)
-- Başlangıç satırları hazır gelir: Claude Code, Ollama, Xcode, Swift,
-  React, commit, repo, terminal, Fatih
+- Başlangıç satırları hazır gelir (Faz 3'teki başlangıç setiyle birebir
+  aynı): Claude Code, Ollama, Whisper, Xcode, Swift, React, commit,
+  repo, terminal, Fatih
 
 **Sekme "Kısayollar"**
 - Her satır tıklanınca tuş bekleyen bir `KeyRecorder` alanı
@@ -567,7 +575,7 @@ doğrulamak. Çakışma çıkarsa yedekler: `⌃⌥D`, `⌃⇧Space`.
 ├── research/
 │   ├── dersler.md
 │   └── topluluk-arastirmasi.md
-└── src/AudioPromt/          (isim netleşince değişir)
+└── src/AudioPromt/
     ├── Package.swift              SPM manifest, IDE gerektirmez
     ├── Makefile                   run / sign / clean
     ├── Sources/App/
