@@ -230,7 +230,25 @@ Bunlar tahmin değil, komutla kontrol edildi:
 Her fazın **çıkış kriteri** var. Kriter karşılanmadan sonraki faza
 geçilmez. Her faz sonunda commit atılır (push yok — bkz. Kesin kurallar).
 
-### Faz 0 — İskelet (hedef: yarım gün)
+### Faz 0 — İskelet ✅ TAMAMLANDI (2026-09-05)
+
+Kurulanlar: SPM paketi proje kökünde, `AppDelegate.swift` (`NSStatusItem`
++ menü), `Resources/Info.plist` (`LSUIElement`, mikrofon açıklaması),
+`Makefile` (`build`/`bundle`/`sign`/`run`/`clean`), kendinden imzalı
+sertifika (`Audio Promt Local Signing`) Anahtar Zinciri'nde kuruldu ve
+Makefile'a bağlandı.
+
+**Kararlılık testi yapıldı ve geçti:** İki ayrı derleme arasında CDHash
+değişti (`d52a521c...` → `fc0a8f13...`, beklenen) ama designated
+requirement sabit kaldı (`certificate leaf = H"ce518df3..."`) — Faz 4'ün
+en kritik belirsizliği (imza kararlılığı) burada, Mikrofon izni için
+kanıtlandı.
+
+**Çalışma testi yapıldı:** Uygulama gerçekten çalıştırıldı, menü çubuğu
+ikonu göründü (kapatılınca kayboldu — doğrulanmış), Dock'ta/⌘Tab'de
+görünmedi (`osascript` ile background-only doğrulandı).
+
+Aşağıdaki orijinal adım listesi referans için duruyor:
 
 1. **Xcode IDE açılmıyor.** `swift package init --type executable` ile
    SPM paketi kur, **doğrudan proje köküne** (`~/audio promt/`) — ayrı bir
@@ -757,5 +775,6 @@ Bunlar teknik değil, tercih kararı — ben veremem:
 
 ## 15. Sıradaki adım
 
-**Faz 0, madde 1** — `swift package init` ile SPM iskeletini kur. Onay
-verilirse başlıyorum.
+**Faz 0 tamamlandı.** Sıradaki: **Faz 1** — `RegisterEventHotKey` ile
+`⌃⌥Space` kısayolu ve `AVAudioEngine` ile mikrofon yakalama. Faz 1'in asıl
+sınavı: Erişilebilirlik izni verilmemişken kısayolun çalışması.
