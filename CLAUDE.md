@@ -24,40 +24,24 @@ Aynı desen vault kökünde de kullanılıyor.
 ## Durum (2026-09-05) — canlı, her faz bitince güncellenir
 
 İki eski yaklaşım terk edildi (VoiceInk, whisper-dictate — TCC/onboarding
-sorunları, bkz. `research/dersler.md`). Üçüncü yaklaşım: sıfırdan native
-Swift, izin ihtiyacına göre katmanlanmış mimari, uygulanıyor.
+sorunları, bkz. `research/dersler.md`). Üçüncü yaklaşım (sıfırdan native
+Swift, izin ihtiyacına göre katmanlanmış mimari) **tamamlandı ve
+üretimde**: Faz 0-5 + UI + kısayollar hepsi bitti, test edildi, GitHub'a
+push edildi.
 
-**İlerleme: Faz 0, 1, 2, 3, 4, 5 — hepsi tamamlandı ve test edildi
-(2026-09-05).** Fatih'in talimatıyla burada duruldu, bir sonraki adım
-onun onayını bekliyor (planda tanımlı bir "Faz 6" yok).
+Sistem uçtan uca çalışıyor: `⌃⌥1` (veya basılı-tutma tuşu) → konuş →
+otomatik/elle durdur → temizlenmiş metin otomatik yerine düşer →
+geçmişe kaydedilir.
 
-- ✅ Faz 0 — İskelet, kendinden imzalı kararlı sertifika, tek-örnek koruması.
-- ✅ Faz 1 — Kısayol `⌃⌥1` (Fn/⌃⌥Space denendi, olmadı), Erişilebilirlik
-  izni olmadan çalıştığı doğrulandı.
-- ✅ Faz 2 — WhisperKit transkripsiyon (`large-v3-turbo`) + HUD paneli
-  (dalga formu, durum göstergeleri).
-- ✅ Faz 3 — Sözlük düzeltmesi, Ollama temizleme + güvenlik ağı (gerçek
-  testte üçü de — başarı/zaman aşımı/eleme — gözlendi), VAD (sessizlikte
-  otomatik durma, fiziksel test edildi), geçmiş (JSON + menü).
-- ✅ **Faz 4 — En kritik soru cevaplandı: kendinden imzalı sertifika hem
-  Mikrofon hem Erişilebilirlik izninde rebuild'lere karşı kalıcı.** İki
-  eski projeyi öldüren duvar gerçekten aşıldı.
-- ✅ Faz 5 — Otomatik yapıştırma, basılı-tutma (Sağ Option, fiziksel
-  test edildi), girişte otomatik başlatma (`SMAppService`, kayıt
-  doğrulandı), CGEventTap sağlık kontrolü.
+**2026-09-05'te PLAN.md, Fatih'in isteğiyle tamamen yeniden yazıldı:**
+artık uzun anlatı/gerekçe değil, kısa durum + "Yapılacaklar" checklist'i
++ sıkıştırılmış teknik referans. Eski ayrıntılı araştırma sürümü git
+geçmişinde duruyor (`git log -- PLAN.md`), gerekirse oradan bakılır.
+Kalan tek açık iş PLAN.md'nin "Yapılacaklar" bölümünde.
 
-Bilinçli ertelenenler (hiçbir çıkış kriteri gerektirmedi): tam 5 sekmeli
-Ayarlar penceresi, Whisper'a metin promptu, onboarding penceresi, TR/EN
-karışık tek cümle testi. Detay `PLAN.md` bölüm 15'te.
-
-Sistem uçtan uca çalışıyor: `⌃⌥1` (veya Sağ Option basılı tut) → konuş
-→ otomatik/elle durdur → temizlenmiş metin otomatik yerine düşer →
-geçmişe kaydedilir. Tüm ayrıntı, çıkış kriterleri ve bulunan hatalar
-`PLAN.md`'de.
-
-**Her oturumda önce `PLAN.md`'ye bak, orayı güncelle. Her faz
-tamamlandığında bu dosyanın "Durum" bölümü de kısa özetle güncellenir —
-sadece `PLAN.md`'de bırakılmaz.**
+**Her oturumda önce `PLAN.md`'ye bak (artık kısa, hızlı okunur), orayı
+güncelle. Her ilerlemede bu dosyanın "Durum" bölümü de kısa özetle
+güncellenir — sadece `PLAN.md`'de bırakılmaz.**
 
 ## Planın temel içgörüsü
 
@@ -95,13 +79,9 @@ Private repo: **github.com/MekmetFatihBUYUKKARCI/audio-promt-system**
 
 ## Sabit kurallar
 
-- **Plan sırası kırılmaz — asla sormadan atlama.** (2026-09-05 dersi:
-  Faz 2 test edilirken Faz 4/5'e "hemen otomatik yapıştırma istiyorum"
-  denince sorulmadan atlanmıştı, Fatih bunu doğru bulmadı.) Bir özellik
-  isteği plan sırasıyla çakışırsa **önce çakışmayı söyle, onay bekle** —
-  isteği doğrudan uygulayıp sırayı kendiliğinden kırma. Fazlar sırayla
-  tamamlanır (0→1→2→3→4→5). **Faz 5'ten sonra plan tanımlı değil —
-  Fatih'in açık talimatı: orada dur, onun onayı olmadan devam etme.**
+- **Plan sırası kırılmaz — asla sormadan atlama.** Bir özellik isteği
+  PLAN.md'nin "Yapılacaklar" sırasıyla çakışırsa **önce çakışmayı söyle,
+  onay bekle** — isteği doğrudan uygulayıp sırayı kendiliğinden kırma.
 - **Otomatik `git push` yok.** Remote bağlı ve lokal commit'ler atılıyor
   ama uzağa göndermek sadece Fatih söyleyince.
 - Bu projenin teknik detayı Jarvis'in genel hafızasına
@@ -110,13 +90,13 @@ Private repo: **github.com/MekmetFatihBUYUKKARCI/audio-promt-system**
 - **Proje kökü kesin olarak `~/audio promt/`.** Başka hiçbir yerde
   (MehmetOS kasası dahil) kopya tutulmaz.
 - Yukarıdaki **dosya senkron protokolü** her zaman geçerli.
-- **PLAN.md'nin araştırılıp yazılmış özgün içeriğini (bölüm 1-8'deki
-  mimari/şartname metni) Fatih'in onayı olmadan değiştirme.** (2026-09-05
-  dersi: bölüm 6.4/6.5'e "yazılmayacak" notu eklerken önce sormadan
-  yazmıştım, Fatih'in tepkisi: "planı zırt pırt güncelleme, onay almadan
-  önceden oluşturduğumuza dokunma, bir ton araştırma yaptık.") Durum/
-  ilerleme takibi (bölüm 15, faz başlıklarındaki ✅/⏳ işaretleri, "Durum"
-  bölümleri) her zamanki gibi güncellenir — asıl kısıtlanan, zaten
-  araştırılıp yazılmış tasarım/şartname metnini onaysız değiştirmek/
-  silmek. Bir karar (örn. "bu bölüm yazılmayacak") ancak Fatih açıkça
-  söyledikten SONRA plana işlenir, kendiliğinden değil.
+- **PLAN.md'nin içeriğini büyük ölçüde/yapısal olarak değiştirmeden
+  önce onay al** (2026-09-05 dersi: bölüm 6.4/6.5'e "yazılmayacak" notu
+  eklerken önce sormadan yazmıştım, Fatih'in tepkisi: "planı zırt pırt
+  güncelleme, onay almadan önceden oluşturduğumuza dokunma, bir ton
+  araştırma yaptık." — aynı gün, 2026-09-05, Fatih PLAN.md'nin tamamen
+  kısa/checklist formatına yeniden yazılmasını **açıkça istedi**, o
+  onayla bugünkü kısa format ortaya çıktı). Durum/ilerleme takibi
+  ("Durum" bölümü, "Yapılacaklar" checkbox'ları) her zamanki gibi
+  serbestçe güncellenir — kısıtlanan, yapısal/kapsamlı bir yeniden
+  yazımı Fatih'in açık isteği olmadan kendiliğinden yapmak.
