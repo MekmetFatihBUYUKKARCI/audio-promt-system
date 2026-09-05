@@ -621,13 +621,43 @@ bırakır + "Yazıya çevriliyor…"
 tıklanabilir olmayacak (fare olaylarını geçirir, `ignoresMouseEvents`),
 böylece altındaki pencereyle etkileşim bozulmaz.
 
-### 6.4 Ayarlar penceresi ⏳ YAZILIYOR (2026-09-05)
+### 6.4 Ayarlar penceresi ✅ TAMAMLANDI (2026-09-05)
 
 ("Menü yeterli" kararı Fatih tarafından iptal edildi — plan orijinal
-haline döndü, tam şartname aşağıdaki gibi inşa ediliyor.)
+haline döndü, tam şartname aşağıdaki gibi inşa edildi.)
 
-SwiftUI `Settings` sahnesi, `TabView` ile 5 sekme. Pencere 520×420 pt,
-boyutlandırılamaz.
+`UI/SettingsView.swift` — 5 sekme, `TabView` yerine segmented `Picker`
+kullanıldı (TabView'ın sekme çubuğu bu barındırma şeklinde — plain
+`NSHostingController` içinde, SwiftUI `App`/`Settings` scene'i olmadan —
+hiç görünmüyordu; segmented Picker + manuel `switch` güvenilir çözüm
+oldu). Pencere **680×640pt, yeniden boyutlandırılabilir** (minimum
+560×480) — orijinal "520×420, boyutlandırılamaz" kararı, Fatih içerik
+taştığını görünce büyütülüp esnek yapıldı.
+
+**Liquid Glass (2026-09-05, Fatih'in isteğiyle):** macOS 26'nın yeni
+tasarım diline uysun diye pencere gerçek cam malzemeyle inşa edildi —
+`NSVisualEffectView` (`.hudWindow`, `.behindWindow` blend) + saydam
+başlık çubuğu (`titlebarAppearsTransparent`), SwiftUI içeriği üstte
+şeffaf arka planla oturuyor. Düz koyu bir arka plan (ör. kod editörü)
+üzerinde belirgin görünmüyor ama masaüstü/renkli pencereler arkasındayken
+bulanık cam etkisi net (ekran görüntüsüyle doğrulandı). `.glass`/
+`.glassProminent` buton stilleri kullanıldı — bu, `Package.swift`'in
+minimum sürümünü `.v14`'ten **`.v26`'ya yükseltmeyi gerektirdi** (proje
+zaten sadece Fatih'in kendi makinesinde çalışacağı için sorun değil).
+
+**Font hiyerarşisi (2026-09-05, Fatih'in isteğiyle):** Her sekmenin
+başına büyük kalın başlık (`.title2.weight(.bold)`) eklendi, gövde
+metni `.body`, ikincil açıklamalar `.footnote`/`.subheadline` — hepsi
+sistem fontu (SF Pro) ama artık tek tip değil, visual-style.md'deki
+tipografi kuralına uygun.
+
+**visual-style.md** oluşturuldu (proje kökünde) — `visual-style` skill'i
+ile, kararları belgeliyor: sistem accent rengi, sistem fontu + boyut
+hiyerarşisi, tam native pencere hissi + Liquid Glass malzeme.
+
+Orijinal şartname (aşağıda) referans olarak duruyor; SwiftUI `Settings`
+sahnesi kullanılmadı (bu proje `NSApplication`/manuel `main.swift` ile
+çalışıyor, SwiftUI `App` yaşam döngüsünde değil).
 
 **Sekme "Genel"**
 - `Toggle` — Girişte başlat

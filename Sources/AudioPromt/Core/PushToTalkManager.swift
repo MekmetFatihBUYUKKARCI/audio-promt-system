@@ -21,12 +21,14 @@ private func pushToTalkTapCallback(
 /// gerektirir — yoksa sessizce devre dışı kalır, ⌃⌥1 aç/kapa yolu her
 /// zaman çalışmaya devam eder.
 final class PushToTalkManager: @unchecked Sendable {
-    private static let rightOptionKeyCode: Int64 = 61
-
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var healthCheckTimer: Timer?
     private var isKeyDown = false
+
+    /// Ayarlar'dan değiştirilebilir — tap thread'inden okunur, bu yüzden
+    /// @unchecked Sendable sınıfın geri kalanıyla aynı mantıkla düz `var`.
+    var keyCode: Int64 = PushToTalkKeyOption.rightOption.keyCode
 
     var onPress: (() -> Void)?
     var onRelease: (() -> Void)?
@@ -66,8 +68,8 @@ final class PushToTalkManager: @unchecked Sendable {
 
     fileprivate func handleTapEvent(type: CGEventType, event: CGEvent) {
         guard type == .flagsChanged else { return }
-        let keycode = event.getIntegerValueField(.keyboardEventKeycode)
-        guard keycode == Self.rightOptionKeyCode else { return }
+        let eventKeycode = event.getIntegerValueField(.keyboardEventKeycode)
+        guard eventKeycode == keyCode else { return }
 
         let isPressed = event.flags.contains(.maskAlternate)
         if isPressed, !isKeyDown {

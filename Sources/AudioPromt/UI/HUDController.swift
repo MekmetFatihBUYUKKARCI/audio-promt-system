@@ -76,6 +76,10 @@ final class HUDController {
     }
 
     private func ensurePanel() {
+        guard Preferences.shared.hudPosition != .hidden else {
+            panel?.orderOut(nil)
+            return
+        }
         if panel == nil {
             let newPanel = NSPanel(
                 contentRect: NSRect(x: 0, y: 0, width: 300, height: 72),
@@ -102,7 +106,16 @@ final class HUDController {
         guard let panel, let screen = NSScreen.main else { return }
         let screenFrame = screen.visibleFrame
         let x = screenFrame.midX - panel.frame.width / 2
-        let y = screenFrame.minY + 24
+
+        let y: CGFloat
+        switch Preferences.shared.hudPosition {
+        case .bottomCenter, .hidden:
+            y = screenFrame.minY + 24
+        case .topCenter:
+            y = screenFrame.maxY - panel.frame.height - 24
+        case .belowMenuBar:
+            y = screenFrame.maxY - panel.frame.height - 4
+        }
         panel.setFrameOrigin(NSPoint(x: x, y: y))
     }
 }

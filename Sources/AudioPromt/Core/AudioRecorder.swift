@@ -1,4 +1,5 @@
 import AVFoundation
+import AudioToolbox
 
 /// Kendi durumunu (start/stop) her zaman tek bir çağıran taraftan sırayla
 /// yönetir, ama installTap'in callback'i CoreAudio'nun gerçek zamanlı ses
@@ -21,6 +22,22 @@ final class AudioRecorder: @unchecked Sendable {
         channels: 1,
         interleaved: false
     )!
+
+    /// Ayarlar'dan seçilen mikrofon cihazının UID'si — nil ise sistem
+    /// varsayılanı kullanılır. `start()`'tan önce ayarlanmalı.
+    func applyPreferredInputDevice(uid: String?) {
+        guard let uid, let deviceID = AudioDeviceUtility.deviceID(forUID: uid) else { return }
+        guard let audioUnit = engine.inputNode.audioUnit else { return }
+        var mutableDeviceID = deviceID
+        AudioUnitSetProperty(
+            audioUnit,
+            kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global,
+            0,
+            &mutableDeviceID,
+            UInt32(MemoryLayout<AudioDeviceID>.size)
+        )
+    }
 
     func start(to url: URL) async throws {
         guard !isRecording else { return }

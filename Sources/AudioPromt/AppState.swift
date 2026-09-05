@@ -23,18 +23,14 @@ final class AppState {
     private let hotKeyManager = HotKeyManager()
     private let pushToTalkManager = PushToTalkManager()
     private let audioRecorder = AudioRecorder()
-    private let transcriber = Transcriber(modelName: "openai_whisper-large-v3-v20240930_turbo")
+    private let transcriber = Transcriber()
     private let hudController = HUDController()
     let historyStore = HistoryStore()
 
     private var recordingURL: URL?
     private var lastTranscript: String?
-
-    var ollamaCleaningEnabled = true
-    var vadEnabled = true
     private var silenceStart: Date?
-    private let silenceThreshold: Float = 0.02
-    private let silenceDuration: TimeInterval = 2.0
+    private var maxDurationWorkItem: DispatchWorkItem?
 
     /// AppDelegate tarafından menü çubuğu ikonunu güncellemek için atanır.
     var onIconStateChange: ((IconState) -> Void)?
@@ -71,9 +67,15 @@ final class AppState {
             }
         }
 
-        pushToTalkManager.onPress = { [weak self] in self?.startPushToTalk() }
-        pushToTalkManager.onRelease = { [weak self] in self?.stopPushToTalk() }
+        pushToTalkManager.keyCode = Preferences.shared.pushToTalkKey.keyCode
+        pushToTalkManager.onPress = { [weak self] in self?.handlePushToTalkPress() }
+        pushToTalkManager.onRelease = { [weak self] in self?.handlePushToTalkRelease() }
         pushToTalkManager.start()
+    }
+
+    /// Ayarlar penceresinde tuş/mod değiştirildiğinde çağrılır.
+    func refreshPushToTalkKey() {
+        pushToTalkManager.keyCode = Preferences.shared.pushToTalkKey.keyCode
     }
 
     /// Menüden çağrılır — kısayolla aynı yolu kullanır.
@@ -97,24 +99,30 @@ final class AppState {
         }
     }
 
-    private func startPushToTalk() {
-        guard status == .idle else { return }
-        Task { await beginRecording() }
+    private func handlePushToTalkPress() {
+        if Preferences.shared.pushToTalkMode == .toggle {
+            toggleRecording()
+        } else {
+            guard status == .idle else { return }
+            Task { await beginRecording() }
+        }
     }
 
-    private func stopPushToTalk() {
+    private func handlePushToTalkRelease() {
+        guard Preferences.shared.pushToTalkMode == .hold else { return }
         guard status == .recording else { return }
         Task { await endRecordingAndTranscribe() }
     }
 
     private func handleLevelForVAD(_ rms: Float) {
-        guard vadEnabled, status == .recording else {
+        let prefs = Preferences.shared
+        guard prefs.vadEnabled, status == .recording else {
             silenceStart = nil
             return
         }
-        if rms < silenceThreshold {
+        if rms < Float(prefs.vadThreshold) {
             if let start = silenceStart {
-                if Date().timeIntervalSince(start) >= silenceDuration {
+                if Date().timeIntervalSince(start) >= prefs.vadSilenceDuration {
                     silenceStart = nil
                     toggleRecording()
                 }
@@ -128,6 +136,9 @@ final class AppState {
 
     private func beginRecording() async {
         status = .starting
+        let prefs = Preferences.shared
+        audioRecorder.applyPreferredInputDevice(uid: prefs.microphoneDeviceUID)
+
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("audiopromt-\(UUID().uuidString).wav")
         do {
@@ -138,6 +149,7 @@ final class AppState {
             hudController.showRecording()
             onIconStateChange?(.recording)
             NSLog("🎙️ Kayıt başladı: \(url.path)")
+            scheduleMaxDurationCutoff(after: prefs.maxRecordingDuration)
         } catch {
             status = .idle
             showTransientError("Mikrofon başlatılamadı")
@@ -145,7 +157,19 @@ final class AppState {
         }
     }
 
+    private func scheduleMaxDurationCutoff(after seconds: TimeInterval) {
+        maxDurationWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self, self.status == .recording else { return }
+            NSLog("⏱️ Maksimum kayıt süresine ulaşıldı, otomatik durduruluyor")
+            self.toggleRecording()
+        }
+        maxDurationWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: workItem)
+    }
+
     private func endRecordingAndTranscribe() async {
+        maxDurationWorkItem?.cancel()
         audioRecorder.stop()
         SoundFeedback.recordingStopped()
         status = .transcribing
@@ -159,12 +183,28 @@ final class AppState {
             return
         }
 
+        let prefs = Preferences.shared
+
         do {
-            let rawText = try await transcriber.transcribe(audioPath: url.path)
+            let rawText = try await transcriber.transcribe(
+                audioPath: url.path,
+                modelName: prefs.whisperModel.rawValue,
+                languageCode: prefs.languageMode.whisperLanguageCode
+            )
             NSLog("📝 Ham transkript: \(rawText)")
 
             if !rawText.isEmpty {
-                let cleaner = TextCleaner(enabled: ollamaCleaningEnabled)
+                let cleaner = TextCleaner(
+                    vocabulary: Vocabulary(hints: Vocabulary.loadFromBundle().hints, corrections: prefs.vocabularyCorrections),
+                    thresholds: TextCleaner.Thresholds(
+                        maxWordLossFraction: prefs.maxWordLossPercent / 100,
+                        minSimilarity: prefs.minSimilarityPercent / 100,
+                        timeout: prefs.ollamaTimeout
+                    ),
+                    ollamaBaseURL: URL(string: prefs.ollamaAddress) ?? URL(string: "http://localhost:11434")!,
+                    ollamaModel: prefs.ollamaModel,
+                    enabled: prefs.ollamaEnabled
+                )
                 let (finalText, wasLLMCleaned) = await cleaner.clean(rawTranscript: rawText)
 
                 let autoPasted = AXIsProcessTrusted()

@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
@@ -9,6 +10,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var historyMenu: NSMenu!
     private var llmToggleItem: NSMenuItem!
     private var vadToggleItem: NSMenuItem!
+
+    private var settingsWindow: NSWindow?
+    private var onboardingWindow: NSWindow?
+    private var settingsHostingController: NSViewController?
+    private var onboardingHostingController: NSViewController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -23,6 +29,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.iconController.apply(state)
         }
         appState.start()
+
+        if !Preferences.shared.onboardingCompleted {
+            showOnboarding()
+        }
     }
 
     private func buildMenu() -> NSMenu {
@@ -50,12 +60,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         llmToggleItem = NSMenuItem(title: "LLM ile temizle", action: #selector(toggleLLMCleaning), keyEquivalent: "")
         llmToggleItem.target = self
-        llmToggleItem.state = .on
         menu.addItem(llmToggleItem)
 
         vadToggleItem = NSMenuItem(title: "Sessizlikte otomatik dur", action: #selector(toggleVAD), keyEquivalent: "")
         vadToggleItem.target = self
-        vadToggleItem.state = .on
         menu.addItem(vadToggleItem)
 
         let clearHistoryItem = NSMenuItem(title: "Geçmişi temizle", action: #selector(clearHistory), keyEquivalent: "")
@@ -64,11 +72,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(.separator())
 
+        let settingsItem = NSMenuItem(title: "Ayarlar…", action: #selector(openSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+
+        let aboutItem = NSMenuItem(title: "Audio Promt Hakkında", action: #selector(showAbout), keyEquivalent: "")
+        aboutItem.target = self
+        menu.addItem(aboutItem)
+
         let quitItem = NSMenuItem(title: "Çık", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
 
         return menu
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        guard menu !== historyMenu else { return }
+        llmToggleItem.state = Preferences.shared.ollamaEnabled ? .on : .off
+        vadToggleItem.state = Preferences.shared.vadEnabled ? .on : .off
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
@@ -108,17 +130,86 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func toggleLLMCleaning() {
-        appState.ollamaCleaningEnabled.toggle()
-        llmToggleItem.state = appState.ollamaCleaningEnabled ? .on : .off
+        Preferences.shared.ollamaEnabled.toggle()
+        llmToggleItem.state = Preferences.shared.ollamaEnabled ? .on : .off
     }
 
     @objc private func toggleVAD() {
-        appState.vadEnabled.toggle()
-        vadToggleItem.state = appState.vadEnabled ? .on : .off
+        Preferences.shared.vadEnabled.toggle()
+        vadToggleItem.state = Preferences.shared.vadEnabled ? .on : .off
     }
 
     @objc private func clearHistory() {
         appState.historyStore.clear()
+    }
+
+    @objc private func openSettings() {
+        if settingsWindow == nil {
+            let hosting = NSHostingController(rootView: SettingsView(historyStore: appState.historyStore))
+            settingsHostingController = hosting
+            let window = makeGlassWindow(
+                size: NSSize(width: 680, height: 640),
+                title: "Audio Promt Ayarları",
+                hostingController: hosting
+            )
+            window.minSize = NSSize(width: 560, height: 480)
+            window.center()
+            settingsWindow = window
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        settingsWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    private func showOnboarding() {
+        let hosting = NSHostingController(rootView: OnboardingView(onDismiss: { [weak self] in
+            self?.onboardingWindow?.close()
+        }))
+        onboardingHostingController = hosting
+        let window = makeGlassWindow(
+            size: NSSize(width: 400, height: 380),
+            title: "Audio Promt'a Hoş Geldin",
+            hostingController: hosting
+        )
+        window.center()
+        onboardingWindow = window
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    /// Liquid Glass görünümü: `.titled` pencere yerine saydam, kenarlıksız
+    /// başlık çubuğu + arkada `NSVisualEffectView` (macOS 26'nın sistem
+    /// genelindeki cam malzeme render'ını otomatik alır — SwiftUI içeriği
+    /// üstte şeffaf arka planla oturuyor.
+    private func makeGlassWindow(size: NSSize, title: String, hostingController: NSViewController) -> NSWindow {
+        let window = NSWindow(
+            contentRect: NSRect(origin: .zero, size: size),
+            styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = title
+        window.titlebarAppearsTransparent = true
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.isReleasedWhenClosed = false
+
+        let effectView = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
+        effectView.material = .hudWindow
+        effectView.blendingMode = .behindWindow
+        effectView.state = .active
+        effectView.autoresizingMask = [.width, .height]
+
+        hostingController.view.frame = effectView.bounds
+        hostingController.view.autoresizingMask = [.width, .height]
+        effectView.addSubview(hostingController.view)
+
+        window.contentView = effectView
+        return window
+    }
+
+    @objc private func showAbout() {
+        NSApp.orderFrontStandardAboutPanel(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc private func quit() {
