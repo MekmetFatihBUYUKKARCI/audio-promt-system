@@ -8,6 +8,13 @@ import AudioToolbox
 /// zamanının izolasyon ihlali sayıp uygulamayı çökertmesine yol açıyordu.
 final class AudioRecorder: @unchecked Sendable {
     private let engine = AVAudioEngine()
+    /// `installTap`'in callback'i (ses thread'i) ve `stop()` (çağıran
+    /// thread) `audioFile`'a eşzamanlı erişebiliyor — `removeTap` çağrısı
+    /// dönmeden önce halihazırda çalışan bir callback'in bitmesini garanti
+    /// etmiyor (AVFoundation dokümantasyonu). Kilitsiz erişim `stop()`
+    /// sırasında callback'in az önce nil'lenmiş dosyaya yazmaya çalışmasına
+    /// yol açabiliyordu (2026-09-05 kod incelemesinde bulundu).
+    private let audioFileLock = NSLock()
     private var audioFile: AVAudioFile?
     private var isRecording = false
 
@@ -52,7 +59,8 @@ final class AudioRecorder: @unchecked Sendable {
             throw AudioRecorderError.converterCreationFailed
         }
 
-        audioFile = try AVAudioFile(forWriting: url, settings: outputFormat.settings)
+        let newFile = try AVAudioFile(forWriting: url, settings: outputFormat.settings)
+        audioFileLock.withLock { audioFile = newFile }
 
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
             guard let self else { return }
@@ -87,7 +95,10 @@ final class AudioRecorder: @unchecked Sendable {
             }
 
             guard conversionError == nil else { return }
-            try? self.audioFile?.write(from: convertedBuffer)
+            self.audioFileLock.lock()
+            let file = self.audioFile
+            self.audioFileLock.unlock()
+            try? file?.write(from: convertedBuffer)
         }
 
         try engine.start()
@@ -110,7 +121,9 @@ final class AudioRecorder: @unchecked Sendable {
         guard isRecording else { return }
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
+        audioFileLock.lock()
         audioFile = nil
+        audioFileLock.unlock()
         isRecording = false
     }
 }

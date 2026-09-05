@@ -1,7 +1,8 @@
 APP_NAME := AudioPromt
+APP_DISPLAY_NAME := Audio Promt
 SIGN_IDENTITY := Audio Promt Local Signing
 BUILD_DIR := .build/release
-APP_DIR := .build/$(APP_NAME).app
+APP_DIR := .build/$(APP_DISPLAY_NAME).app
 
 .PHONY: build bundle sign run clean
 
@@ -16,6 +17,9 @@ bundle: build
 	cp Resources/Info.plist "$(APP_DIR)/Contents/Info.plist"
 	@if [ -f Resources/vocabulary.json ]; then \
 		cp Resources/vocabulary.json "$(APP_DIR)/Contents/Resources/"; \
+	fi
+	@if [ -f Resources/AppIcon.icns ]; then \
+		cp Resources/AppIcon.icns "$(APP_DIR)/Contents/Resources/"; \
 	fi
 
 sign: bundle

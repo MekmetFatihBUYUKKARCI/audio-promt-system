@@ -31,6 +31,7 @@ final class AppState {
     private var lastTranscript: String?
     private var silenceStart: Date?
     private var maxDurationWorkItem: DispatchWorkItem?
+    private var escHotKeyID: UInt32?
 
     /// AppDelegate tarafından menü çubuğu ikonunu güncellemek için atanır.
     var onIconStateChange: ((IconState) -> Void)?
@@ -44,7 +45,7 @@ final class AppState {
                 self?.toggleRecording()
             }
         }
-        if !recordRegistered {
+        if recordRegistered == nil {
             NSLog("⚠️ ⌃⌥1 kaydedilemedi — başka bir uygulama kullanıyor olabilir")
         }
 
@@ -56,8 +57,20 @@ final class AppState {
                 self?.pasteLastTranscriptAgain()
             }
         }
-        if !pasteAgainRegistered {
+        if pasteAgainRegistered == nil {
             NSLog("⚠️ ⌃⌥V kaydedilemedi")
+        }
+
+        let toggleCleaningRegistered = hotKeyManager.register(
+            keyCode: UInt32(kVK_ANSI_C),
+            modifiers: HotKeyModifier.control | HotKeyModifier.option
+        ) { [weak self] in
+            Task { @MainActor in
+                self?.toggleLLMCleaningFromHotKey()
+            }
+        }
+        if toggleCleaningRegistered == nil {
+            NSLog("⚠️ ⌃⌥C kaydedilemedi")
         }
 
         audioRecorder.onLevelUpdate = { [weak self, weak hudController] rms in
@@ -71,6 +84,8 @@ final class AppState {
         pushToTalkManager.onPress = { [weak self] in self?.handlePushToTalkPress() }
         pushToTalkManager.onRelease = { [weak self] in self?.handlePushToTalkRelease() }
         pushToTalkManager.start()
+
+        transcriber.prewarm(modelName: Preferences.shared.whisperModel.rawValue)
     }
 
     /// Ayarlar penceresinde tuş/mod değiştirildiğinde çağrılır.
@@ -88,9 +103,15 @@ final class AppState {
         pasteLastTranscriptAgain()
     }
 
+    private func toggleLLMCleaningFromHotKey() {
+        Preferences.shared.ollamaEnabled.toggle()
+        NSLog("⌃⌥C: LLM ile temizle = \(Preferences.shared.ollamaEnabled)")
+    }
+
     private func toggleRecording() {
         switch status {
         case .idle:
+            isPushToTalkHoldSession = false
             Task { await beginRecording() }
         case .recording:
             Task { await endRecordingAndTranscribe() }
@@ -99,24 +120,46 @@ final class AppState {
         }
     }
 
+    /// Hızlı bas-bırak (tipik insan dokunuşu ~100-200ms), `beginRecording()`'in
+    /// mikrofonu gerçekten başlatma süresinden (birkaç yüz ms, async) daha
+    /// hızlı olabiliyor. O anda bırakma gelirse `status` hâlâ `.starting`
+    /// oluyor, `.recording` bekleyen guard bunu sessizce yok sayıyordu —
+    /// kayıt takılı kalıyor, ikinci basışın bırakması onu durdurana kadar.
+    /// Çözüm: bırakma `.starting` sırasında gelirse bayrakla, kayıt fiilen
+    /// başlar başlamaz o bayrağa göre hemen durdur.
+    private var pendingStopWhileStarting = false
+
+    /// Basılı-tutma sırasında VAD'ı devre dışı bırakmak için — tuş zaten
+    /// açık bir durdurma sinyali, cümleler arası doğal sessizlik VAD
+    /// tarafından "bitti" sanılıp tuş hâlâ basılıyken kaydı kesiyordu.
+    private var isPushToTalkHoldSession = false
+
     private func handlePushToTalkPress() {
         if Preferences.shared.pushToTalkMode == .toggle {
             toggleRecording()
         } else {
             guard status == .idle else { return }
+            pendingStopWhileStarting = false
+            isPushToTalkHoldSession = true
             Task { await beginRecording() }
         }
     }
 
     private func handlePushToTalkRelease() {
         guard Preferences.shared.pushToTalkMode == .hold else { return }
-        guard status == .recording else { return }
-        Task { await endRecordingAndTranscribe() }
+        switch status {
+        case .recording:
+            Task { await endRecordingAndTranscribe() }
+        case .starting:
+            pendingStopWhileStarting = true
+        case .idle, .transcribing:
+            break
+        }
     }
 
     private func handleLevelForVAD(_ rms: Float) {
         let prefs = Preferences.shared
-        guard prefs.vadEnabled, status == .recording else {
+        guard prefs.vadEnabled, status == .recording, !isPushToTalkHoldSession else {
             silenceStart = nil
             return
         }
@@ -150,6 +193,13 @@ final class AppState {
             onIconStateChange?(.recording)
             NSLog("🎙️ Kayıt başladı: \(url.path)")
             scheduleMaxDurationCutoff(after: prefs.maxRecordingDuration)
+            registerEscToCancel()
+
+            if pendingStopWhileStarting {
+                pendingStopWhileStarting = false
+                NSLog("↩️ Basılı-tutma, kayıt başlamadan önce zaten bırakılmıştı — hemen durduruluyor")
+                Task { await endRecordingAndTranscribe() }
+            }
         } catch {
             status = .idle
             showTransientError("Mikrofon başlatılamadı")
@@ -168,7 +218,44 @@ final class AppState {
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: workItem)
     }
 
+    /// Esc — PLAN.md bölüm 7: sadece kayıt sırasında kayıtlı, kayıt
+    /// bitince (veya iptal edilince) hemen kaldırılıyor. Böylece Esc
+    /// tuşu başka hiçbir zaman/uygulamada çalınmıyor.
+    private func registerEscToCancel() {
+        escHotKeyID = hotKeyManager.register(keyCode: UInt32(kVK_Escape), modifiers: 0) { [weak self] in
+            Task { @MainActor in
+                self?.cancelRecording()
+            }
+        }
+    }
+
+    private func unregisterEsc() {
+        if let id = escHotKeyID {
+            hotKeyManager.unregister(id: id)
+            escHotKeyID = nil
+        }
+    }
+
+    private func cancelRecording() {
+        guard status == .recording else { return }
+        isPushToTalkHoldSession = false
+        unregisterEsc()
+        maxDurationWorkItem?.cancel()
+        audioRecorder.stop()
+        if let url = recordingURL {
+            try? FileManager.default.removeItem(at: url)
+        }
+        recordingURL = nil
+        status = .idle
+        SoundFeedback.recordingStopped()
+        hudController.hide()
+        onIconStateChange?(.idle)
+        NSLog("⎋ Kayıt iptal edildi (Esc)")
+    }
+
     private func endRecordingAndTranscribe() async {
+        isPushToTalkHoldSession = false
+        unregisterEsc()
         maxDurationWorkItem?.cancel()
         audioRecorder.stop()
         SoundFeedback.recordingStopped()

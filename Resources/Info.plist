@@ -8,6 +8,8 @@
     <string>com.fatih.audiopromt</string>
     <key>CFBundleName</key>
     <string>Audio Promt</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

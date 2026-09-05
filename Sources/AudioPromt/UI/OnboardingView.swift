@@ -46,6 +46,12 @@ struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 8)
 
+            Text("Dikte ettiğiniz metinler sadece bu bilgisayarda saklanır, hiçbir yere gönderilmez.")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
+
             Button("Anladım") {
                 prefs.onboardingCompleted = true
                 onDismiss()

@@ -57,8 +57,10 @@ final class HotKeyManager {
         )
     }
 
+    /// Başarılıysa daha sonra `unregister(id:)` ile kaldırmak için bir
+    /// kimlik döndürür; başarısızsa nil.
     @discardableResult
-    func register(keyCode: UInt32, modifiers: UInt32, handler: @escaping () -> Void) -> Bool {
+    func register(keyCode: UInt32, modifiers: UInt32, handler: @escaping () -> Void) -> UInt32? {
         let id = nextID
         nextID += 1
 
@@ -73,10 +75,20 @@ final class HotKeyManager {
             &ref
         )
 
-        guard status == noErr, let ref = ref else { return false }
+        guard status == noErr, let ref = ref else { return nil }
         hotKeyRefs[id] = ref
         handlers[id] = handler
-        return true
+        return id
+    }
+
+    /// Tek bir kısayolu kaldırır — Esc gibi sadece geçici olarak kayıtlı
+    /// tuşlar için (bkz. PLAN.md bölüm 7: "Esc sadece kayıt sırasında
+    /// kaydedilir, kayıt bitince serbest bırakılır").
+    func unregister(id: UInt32) {
+        if let ref = hotKeyRefs.removeValue(forKey: id) {
+            UnregisterEventHotKey(ref)
+        }
+        handlers.removeValue(forKey: id)
     }
 
     func unregisterAll() {

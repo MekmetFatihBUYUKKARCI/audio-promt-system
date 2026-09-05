@@ -757,6 +757,7 @@ ayrı bir katman yok (2026-09-05 kararı):
 ~/audio promt/
 ├── CLAUDE.md              (AGENTS.md → symlink)
 ├── PLAN.md                (bu dosya)
+├── README.md              kullanım, kurulum, Gatekeeper/xattr adımı, gizlilik notu
 ├── research/
 │   ├── dersler.md
 │   └── topluluk-arastirmasi.md
@@ -765,31 +766,35 @@ ayrı bir katman yok (2026-09-05 kararı):
 ├── Makefile                   build / bundle / sign / run / clean
 ├── Sources/AudioPromt/
 │   ├── main.swift             uygulama girişi, LSUIElement, tek-örnek koruması
-│   ├── AppDelegate.swift      NSStatusItem, menü, icon/HUD bağlama
+│   ├── AppDelegate.swift      NSStatusItem, menü, icon/HUD bağlama, Settings/Onboarding pencereleri
 │   ├── AppState.swift         merkezi durum makinesi (idle/starting/recording/transcribing)
 │   ├── Core/
-│   │   ├── HotKeyManager.swift    Carbon RegisterEventHotKey (⌃⌥1, ⌃⌥V)
+│   │   ├── HotKeyManager.swift    Carbon RegisterEventHotKey (⌃⌥1, ⌃⌥V, ⌃⌥C, Esc — kayıt+kaldır)
 │   │   ├── AudioRecorder.swift    AVAudioEngine, dönüşüm, RMS callback (HUD+VAD paylaşır)
-│   │   ├── Transcriber.swift      WhisperKit sarmalayıcı (large-v3-turbo)
+│   │   ├── Transcriber.swift      WhisperKit sarmalayıcı, model adı çağrı başına, prewarm()
 │   │   ├── TextCleaner.swift      sözlük + Ollama + güvenlik ağı (Levenshtein benzerlik)
 │   │   ├── TextDelivery.swift     pano (v1) + CGEvent ⌘V (v2, Erişilebilirlik varsa)
 │   │   ├── HistoryStore.swift     son 50 kayıt, JSON kalıcılık
 │   │   ├── SoundFeedback.swift    Ping/Pop (kayıt başlama/bitme)
-│   │   ├── PushToTalkManager.swift  Sağ Option, CGEventTap + sağlık kontrolü
-│   │   └── LaunchAtLogin.swift    SMAppService.mainApp.register()
+│   │   ├── PushToTalkManager.swift  basılı-tutma tuşu (Ayarlar'dan seçilebilir) + sağlık kontrolü
+│   │   ├── LaunchAtLogin.swift    SMAppService.mainApp.register()
+│   │   ├── Preferences.swift      tüm ayarlar için tek kaynak, UserDefaults tabanlı ObservableObject
+│   │   ├── AudioDeviceUtility.swift  CoreAudio giriş cihazı listesi (mikrofon seçimi)
+│   │   └── MicLevelMonitor.swift  Ayarlar'daki canlı mikrofon seviyesi için ayrı AVAudioEngine
 │   └── UI/
 │       ├── HUDContentView.swift      SwiftUI içerik (recording/transcribing/result/error)
 │       ├── HUDController.swift       NSPanel yönetimi, .nonactivatingPanel
-│       └── MenuBarIconController.swift  durum bazlı ikon (idle/recording/transcribing/error)
+│       ├── MenuBarIconController.swift  durum bazlı ikon (idle/recording/transcribing/error)
+│       ├── SettingsView.swift        5 sekmeli Ayarlar penceresi (Genel/Model/Temizleme/Sözlük/Kısayollar)
+│       └── OnboardingView.swift      ilk açılış karşılama penceresi
 ├── Resources/
 │   ├── Info.plist
-│   └── vocabulary.json       sözlük (hints + corrections)
+│   ├── vocabulary.json       sözlük (hints + corrections)
+│   └── AppIcon.icns          uygulama ikonu
 └── Tests/AudioPromtTests/
 ```
 
-**Not (2026-09-05):** Bölüm 6.4'teki `SettingsView.swift` (5 sekmeli
-Ayarlar penceresi) ve `OnboardingView.swift` bilerek yazılmadı — bkz.
-bölüm 15. `WaveformView` ayrı dosya değil, `HUDContentView.swift`
+**Not (2026-09-05):** `WaveformView` ayrı dosya değil, `HUDContentView.swift`
 içinde `private struct` olarak duruyor.
 
 ---
@@ -947,31 +952,103 @@ Bunlar teknik değil, tercih kararı — ben veremem:
 
 ## 15. Durum ve sıradaki adım
 
-**Faz 0'dan Faz 5'e kadar hepsi tamamlandı ve test edildi (2026-09-05).**
-Fatih'in açık talimatı: buradan ileri (planda tanımlı olmayan herhangi
-bir "Faz 6") gitmeden dur, ona haber ver. Bu bölüm o durumu işaretliyor.
+**Faz 0-5 tamamlandı ve test edildi. Bölüm 6.4/6.5 (Ayarlar + onboarding
+pencereleri) tam şartnameye göre yazıldı. Bölüm 7 (kısayol haritası)
+tamamlandı: Esc (kayıt iptal) ve ⌃⌥C (LLM temizle aç/kapa) eklendi.
+Bölüm 8 (dosya yapısı) 2026-09-05'te gerçek koda göre senkronize edildi.**
 
-Sistem uçtan uca çalışıyor: `⌃⌥1` (aç/kapa) veya Sağ Option (basılı
-tut) → konuş → sessizlikte otomatik durur veya elle durdurulur → Whisper
-transkribe eder → sözlük düzeltmesi + Ollama temizleme (güvenlik ağıyla)
-uygulanır → Erişilebilirlik izni varsa otomatik yapıştırılır, yoksa
-panoya yazılır → geçmişe kaydedilir. HUD paneli ve menü çubuğu ikonu
-her aşamada görsel geri bildirim veriyor.
+Sistem uçtan uca çalışıyor: `⌃⌥1` (aç/kapa) veya basılı-tutma tuşu
+(Ayarlar'dan seçilebilir) → konuş → sessizlikte otomatik durur ya da
+elle durdurulur ya da Esc ile iptal edilir → Whisper transkribe eder
+(model açılışta arka planda önceden yükleniyor — bkz. aşağıdaki
+performans notu) → sözlük düzeltmesi + Ollama temizleme (güvenlik
+ağıyla) uygulanır → Erişilebilirlik izni varsa otomatik yapıştırılır,
+yoksa panoya yazılır → geçmişe kaydedilir. HUD paneli ve menü çubuğu
+ikonu her aşamada görsel geri bildirim veriyor.
 
-**2026-09-05 güncellemesi:** Bölüm 6.4/6.5 için "menü yeterli, yazılmayacak"
-kararı Fatih tarafından **iptal edildi** — plan orijinal haline
-döndürüldü, ikisi de tam şartnameye göre yazılıyor (bkz. o bölümler).
-Aşağıdaki liste artık sadece hâlâ gerçekten yazılmamış/test edilmemiş
-şeyleri gösteriyor:
+**2026-09-05 canlı test turu — Fatih'in gerçek kullanımıyla bulunup
+düzeltilen 3 hata:**
+- Basılı-tutma bazen iki basış gerektiriyordu (hızlı bas-bırak,
+  mikrofonun async başlamasından önce bırakmayı yakalıyordu) —
+  `pendingStopWhileStarting` bayrağıyla düzeltildi.
+- VAD, basılı tutma sırasında cümleler arası doğal sessizlikte kaydı
+  kendiliğinden kesiyordu — `isPushToTalkHoldSession` bayrağıyla VAD
+  basılı-tutma sırasında devre dışı bırakıldı.
+- Ollama temizleme 2 sn zaman aşımına sık takılıyordu (soğuk model
+  başlatma gecikmesi) — zaman aşımı 4 sn'ye çıkarıldı.
+
+**2026-09-05 gecikme şikayeti ve kısmi çözüm:** İlk dikte, uygulama her
+açılışında ~10-20 sn sürüyordu (Whisper modeli o an belleğe yükleniyor).
+`Transcriber.prewarm()` eklendi — model artık uygulama açılışında
+arka planda önceden yükleniyor. Fatih doğruladı: sonraki testte ilk
+dikte ~4-5 sn'ye düştü, ikinci/üçüncü dikteler hızlı ve doğru. Kalan
+~4-5 sn'lik ilk-dikte farkı (muhtemelen Apple Neural Engine'in ilk
+gerçek çıkarımda ek bir ısınma adımı olması) çözülmedi — Fatih için şu
+an kabul edilebilir, ayrıca dokunulmadı.
+
+Bölüm 9-14 (riskler, elenen alternatifler, eşzamanlılık kuralları,
+güvenlik, kesin kurallar, karar noktaları) 2026-09-05'te tek tek
+gözden geçirildi — hepsi hâlâ geçerli, içerik değişikliği gerekmedi.
+Denetimde bölüm 12'de 2 eksik bulundu, ikisi de tamamlandı:
+- Onboarding ekranına gizlilik cümlesi eklendi ("Dikte ettiğiniz
+  metinler sadece bu bilgisayarda saklanır, hiçbir yere gönderilmez").
+- `README.md` yazıldı (kullanım, kurulum, Gatekeeper/`xattr` adımı,
+  gizlilik notu).
+
+Bölüm 11'in çıkış kriteri de fiilen doğrulandı: `⌃⌥1`'e 150ms
+aralıklarla 5 kez üst üste basıldı (osascript ile sentetik tuş
+olayları), uygulama çökmedi, kayıt üst üste binmedi — `.starting`/
+`.transcribing` sırasında gelen fazladan basışlar tasarım gereği yok
+sayıldı (yalnızca 1 başlat + 1 durdur işlendi), test sonrası normal
+tek basış döngüsü sorunsuz çalışmaya devam etti.
+
+Ayrıca uygulamaya ikon eklendi: `Resources/AppIcon.icns`
+(mavi gradyan zemin + beyaz mikrofon SF Symbol, macOS squircle
+oranında), `Info.plist`'te `CFBundleIconFile` ve `Makefile`'ın
+`bundle` hedefinde kopyalanıyor.
+
+**2026-09-05 acımasız benchmark testi (3 tur) ve bulunan 2 gerçek hata
+(ikisi de düzeltildi, düzeltme doğrulandı):**
+1. **`Transcriber` model yükleme yarış durumu.** Uygulama açılışındaki
+   `prewarm()` ile açılıştan hemen sonra (~birkaç saniye içinde)
+   başlatılan gerçek bir dikte aynı anda `ensureLoaded()` çağırınca
+   ikisi de modeli kilitsiz, eşzamanlı iki kez yüklüyordu (log'da iki
+   ayrı thread'den "Model indiriliyor" satırı). Çökme yoktu ama ~6
+   saniyelik yükleme boşa iki kez yapılıyordu. Düzeltme: `Transcriber`'a
+   `NSLock` korumalı `inFlightLoad` — aynı modeli isteyen ikinci çağıran
+   yeni bir yükleme başlatmak yerine birincinin `Task`'ını bekliyor.
+   Aynı senaryo düzeltmeden sonra 3 kez tekrar edildi, üçünde de tek
+   yükleme oldu.
+2. **Whisper halüsinasyonuna karşı süzgeç yoktu.** Sessizlik/ortam
+   gürültüsünde Whisper bazen yanlış dilde bile uydurma cümle
+   üretiyordu (bir seferinde tam Rusça bir cümle). Düzeltme: OpenAI
+   Whisper'ın kendi sessizlik sezgisiyle aynı mantık — bir sonucun TÜM
+   segmentleri hem yüksek `noSpeechProb` (>0.6) hem çok düşük
+   `avgLogprob` (<-1.0) gösteriyorsa o sonuç atılıyor. **Dürüst not:**
+   Bu sezgisel bir süzgeç, garanti değil — Whisper kendi iç güven
+   skorunda emin görünüp yine de yanlış içerik üretirse (test sırasında
+   "Thank you." halüsinasyonu düzeltmeden sonra da bir kez daha geçti)
+   bu süzgeç onu yakalayamaz. Daha sağlam bir çözüm (ör. ses enerjisi
+   eşiğiyle Whisper'ı hiç çağırmama) kapsam dışı bırakıldı, istenirse
+   ayrı bir iş olarak ele alınabilir.
+
+Ayrıca test sırasında bulunup düzeltilen bir kod-incelemesi hatası:
+`AudioRecorder.stop()` ana thread'den `audioFile`'ı nil'lerken ses
+thread'indeki `installTap` callback'i hâlâ ona yazıyor olabilirdi
+(`removeTap`'in dönmesi çalışan callback'in bittiğini garanti etmiyor)
+— `audioFileLock` (`NSLock`) ile korumaya alındı.
+
+Ayrıca doğrulanan güvenlik bulguları: Ollama sadece `127.0.0.1:11434`'te
+dinliyor (LAN IP'den erişilemediği doğrulandı), shell/Process çağrısı
+veya hardcoded sır yok, güvenlik ağı gerçek testte kötü Ollama çıktısını
+3 kez gerçekten eledi.
+
+**Hâlâ yazılmamış/test edilmemiş, bilinçli ertelenmiş konular:**
 - Whisper'a metin tabanlı ipucu/prompt verme (sözlük `hints` alanı
-  şu an kullanılmıyor, tokenizer'a inmek gerekiyordu) — bu ayrı, henüz
-  sorulmamış bir basitleştirme.
-- TR/EN karışık tek cümle testi — sadece düz Türkçe ve düz İngilizce
-  ayrı ayrı test edildi, ikisinin aynı cümlede karışık hali
-  (dersler.md md.6'nın asıl senaryosu) henüz denenmedi.
-- Reboot sonrası girişte gerçekten otomatik açılma — kayıt mekanizması
-  doğrulandı (`sfltool dumpbtm`), gerçek reboot testi yapılmadı.
+  şu an kullanılmıyor).
+- TR/EN karışık tek cümle testi (dersler.md md.6'nın asıl senaryosu).
+- Reboot sonrası girişte gerçekten otomatik açılma (kayıt mekanizması
+  `sfltool dumpbtm` ile doğrulandı, gerçek reboot testi yapılmadı).
 
-**Fatih'e bildirilecek, bir sonraki oturumda onun kararını bekleyen
-konu:** Bundan sonraki adım ne olsun — yukarıdaki ertelenenlerden biri
-mi, yoksa tamamen yeni bir şey mi. Onay almadan ilerlenmeyecek.
+**Sıradaki adım:** Yukarıdaki ertelenenlerden biri mi, yoksa yeni bir
+konu mu — Fatih'in kararını bekliyor.
