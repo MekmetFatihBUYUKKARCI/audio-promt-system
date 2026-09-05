@@ -24,7 +24,7 @@ struct TextCleaner: Sendable {
     struct Thresholds: Sendable {
         var maxWordLossFraction: Double = 0.20
         var minSimilarity: Double = 0.70
-        var timeout: TimeInterval = 2.0
+        var timeout: TimeInterval = 4.0
     }
 
     private static let systemPrompt = """

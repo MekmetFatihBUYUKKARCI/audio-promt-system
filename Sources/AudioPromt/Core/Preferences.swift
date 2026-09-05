@@ -176,7 +176,7 @@ final class Preferences: ObservableObject {
         ollamaSystemPrompt = d.string(forKey: Key.ollamaSystemPrompt) ?? Self.defaultOllamaSystemPrompt
         maxWordLossPercent = d.object(forKey: Key.maxWordLossPercent) as? Double ?? 20
         minSimilarityPercent = d.object(forKey: Key.minSimilarityPercent) as? Double ?? 70
-        ollamaTimeout = d.object(forKey: Key.ollamaTimeout) as? Double ?? 2.0
+        ollamaTimeout = d.object(forKey: Key.ollamaTimeout) as? Double ?? 4.0
 
         vocabularyHintsEnabled = d.object(forKey: Key.vocabularyHintsEnabled) as? Bool ?? true
         if let data = d.data(forKey: Key.vocabularyCorrections),
