@@ -621,16 +621,10 @@ bırakır + "Yazıya çevriliyor…"
 tıklanabilir olmayacak (fare olaylarını geçirir, `ignoresMouseEvents`),
 böylece altındaki pencereyle etkileşim bozulmaz.
 
-### 6.4 Ayarlar penceresi ❌ FATİH'İN KARARIYLA YAZILMAYACAK (2026-09-05)
+### 6.4 Ayarlar penceresi ⏳ YAZILIYOR (2026-09-05)
 
-**Bu, benim atladığım bir şey değil — sorulup açıkça karar verildi.**
-Claude ilk seferinde bunu sormadan "hiçbir çıkış kriteri gerektirmedi"
-diyerek kendi kararıyla atlamıştı; Fatih bunu fark edip düzeltti
-("nasıl değil, bak plana"). Sonra açıkça soruldu, Fatih'in cevabı:
-**"Hayır, menü yeterli."** Aşağıdaki tam şartname referans/ileride
-gerekirse diye duruyor ama şu an için **inşa edilmeyecek**. Yerine
-gelenler: menüde LLM temizle/VAD aç-kapa onay kutuları, Geçmiş alt
-menüsü, Geçmişi temizle — bkz. Faz 3 notu ve `AppDelegate.buildMenu()`.
+("Menü yeterli" kararı Fatih tarafından iptal edildi — plan orijinal
+haline döndü, tam şartname aşağıdaki gibi inşa ediliyor.)
 
 SwiftUI `Settings` sahnesi, `TabView` ile 5 sekme. Pencere 520×420 pt,
 boyutlandırılamaz.
@@ -689,17 +683,12 @@ boyutlandırılamaz.
   → "Basılı tut" seçilirse tuş seçici: Sağ Option / Sağ Command +
   altında uyarı: "Basılı tutma, Erişilebilirlik izni gerektirir."
 
-### 6.5 İlk açılış (onboarding) ❌ FATİH'İN KARARIYLA YAZILMAYACAK (2026-09-05)
+### 6.5 İlk açılış (onboarding) ⏳ YAZILIYOR (2026-09-05)
 
-dersler.md md.7'deki VoiceInk dersi ("onboarding sihirbazı yapma") kod
-tarafında zaten uygulanıyor — uygulama açılır açılmaz çalışıyor, kilitli
-bir durum yok. Ama aşağıdaki **tek karşılama penceresi** de (bölüm
-6.4'le birlikte sorulup) **"menü yeterli"** kararıyla yazılmayacak.
-Model indirme ilerlemesi şu an sadece log'da görünüyor (kullanıcıya
-görsel bir gösterge yok) — bu bilinen bir eksiklik, ekranda fark
-edilmeyebilir.
-
-Aşağıdaki referans için duruyor:
+("Menü yeterli" kararı iptal edildi, bu da yazılıyor.) dersler.md
+md.7'deki VoiceInk dersi: **onboarding sihirbazı yapma.** Uygulama
+açılır açılmaz çalışır durumda olur. Tek istisna, tek bir karşılama
+penceresi:
 
 1. "Audio Promt çalışıyor. `⌃⌥1` ile konuşmaya başla."
 2. Mikrofon izni butonu (tek tık)
@@ -937,15 +926,11 @@ uygulanır → Erişilebilirlik izni varsa otomatik yapıştırılır, yoksa
 panoya yazılır → geçmişe kaydedilir. HUD paneli ve menü çubuğu ikonu
 her aşamada görsel geri bildirim veriyor.
 
-**Yazılmayan şeyler — ilk yazımda bunlar "hiçbir çıkış kriteri
-gerektirmedi" denilerek Claude'un kendi kararıyla, sormadan atlanmıştı.
-Fatih bunu doğru bulmadı ("nasıl değil, bak plana") — plan sırasını
-sormadan kırma kuralının bir başka biçimi olduğu için. Sonra açıkça
-soruldu, cevap netti: "Hayır, menü yeterli." Şimdi bunlar benim
-kararım değil, Fatih'in bilerek verdiği karar:**
-- Bölüm 6.4'teki tam 5 sekmeli Ayarlar penceresi — kritik kontroller
-  (LLM temizle, VAD, geçmiş) menüye eklendi, ayrı pencere yazılmayacak.
-- Bölüm 6.5'teki karşılama penceresi — aynı kararla yazılmayacak.
+**2026-09-05 güncellemesi:** Bölüm 6.4/6.5 için "menü yeterli, yazılmayacak"
+kararı Fatih tarafından **iptal edildi** — plan orijinal haline
+döndürüldü, ikisi de tam şartnameye göre yazılıyor (bkz. o bölümler).
+Aşağıdaki liste artık sadece hâlâ gerçekten yazılmamış/test edilmemiş
+şeyleri gösteriyor:
 - Whisper'a metin tabanlı ipucu/prompt verme (sözlük `hints` alanı
   şu an kullanılmıyor, tokenizer'a inmek gerekiyordu) — bu ayrı, henüz
   sorulmamış bir basitleştirme.
