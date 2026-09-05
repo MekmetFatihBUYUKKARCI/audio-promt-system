@@ -7,14 +7,16 @@ yüklenmez — sadece bu klasörde yaşar.
 ## Hedef
 Klavye yerine sesle prompt/metin girme (özellikle Claude Code terminaline).
 
-## Geçmiş (özet — detay `research/`'te)
+## Geçmiş (özet — çıkarılan dersler `research/dersler.md`'de)
 İki yol denendi, ikisi de terk edildi:
 - **VoiceInk** (Swift fork) — onboarding sihirbazı dışarıdan config'i
-  görmezden geldi. Detay: `research/notlar.md`.
+  görmezden geldi.
 - **whisper-dictate** (Python fork) — kod tamamen çalışır hale getirildi
   ve sentetik testle kanıtlandı, ama macOS Erişilebilirlik izni hiçbir
-  şekilde `.app`'e yansımadı (TCC sorunu, kod hatası değil). Detay:
-  `research/kod-incelemesi.md`, `research/tcc-izin-macerasi.md`.
+  şekilde `.app`'e yansımadı (TCC sorunu, kod hatası değil).
+
+Ayrıntılı anlatım silindi, **yol gösterici dersler** `research/dersler.md`'de
+korunuyor — sıfırdan başlarken önce onu oku.
 
 Duran altyapı: **Ollama + `qwen2.5:3b`** kurulu, çalışıyor, hiçbir yola
 özel değil — hangi yaklaşımı seçersek seçelim kullanılabilir.
