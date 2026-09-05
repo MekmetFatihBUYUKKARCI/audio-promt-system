@@ -713,9 +713,11 @@ sahnesi kullanılmadı (bu proje `NSApplication`/manuel `main.swift` ile
   → "Basılı tut" seçilirse tuş seçici: Sağ Option / Sağ Command +
   altında uyarı: "Basılı tutma, Erişilebilirlik izni gerektirir."
 
-### 6.5 İlk açılış (onboarding) ⏳ YAZILIYOR (2026-09-05)
+### 6.5 İlk açılış (onboarding) ✅ TAMAMLANDI (2026-09-05)
 
-("Menü yeterli" kararı iptal edildi, bu da yazılıyor.) dersler.md
+("Menü yeterli" kararı iptal edildi, bu da yazıldı — `UI/OnboardingView.swift`,
+gerçek testte doğrulandı: mikrofon izni butonu, "Anladım" ile bir daha
+görünmüyor.) dersler.md
 md.7'deki VoiceInk dersi: **onboarding sihirbazı yapma.** Uygulama
 açılır açılmaz çalışır durumda olur. Tek istisna, tek bir karşılama
 penceresi:
