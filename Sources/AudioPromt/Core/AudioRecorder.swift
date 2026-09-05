@@ -10,6 +10,11 @@ final class AudioRecorder: @unchecked Sendable {
     private var audioFile: AVAudioFile?
     private var isRecording = false
 
+    /// Her ham arabellek geldiğinde RMS seviyesi (0...1 civarı) ile
+    /// çağrılır — HUD dalga formu (Faz 2) ve VAD sessizlik algılama
+    /// (Faz 3) bunu paylaşır. Ses thread'inden çağrılır, @Sendable.
+    var onLevelUpdate: (@Sendable (Float) -> Void)?
+
     static let targetFormat = AVAudioFormat(
         commonFormat: .pcmFormatFloat32,
         sampleRate: 16_000,
@@ -34,6 +39,18 @@ final class AudioRecorder: @unchecked Sendable {
 
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
             guard let self else { return }
+
+            if let onLevelUpdate = self.onLevelUpdate, let channelData = buffer.floatChannelData?[0] {
+                let frameCount = Int(buffer.frameLength)
+                if frameCount > 0 {
+                    var sumSquares: Float = 0
+                    for i in 0..<frameCount {
+                        sumSquares += channelData[i] * channelData[i]
+                    }
+                    let rms = (sumSquares / Float(frameCount)).squareRoot()
+                    onLevelUpdate(rms)
+                }
+            }
 
             let ratio = outputFormat.sampleRate / inputFormat.sampleRate
             let capacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 16

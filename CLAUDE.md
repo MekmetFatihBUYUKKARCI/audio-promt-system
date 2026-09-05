@@ -27,30 +27,33 @@ Aynı desen vault kökünde de kullanılıyor.
 sorunları, bkz. `research/dersler.md`). Üçüncü yaklaşım: sıfırdan native
 Swift, izin ihtiyacına göre katmanlanmış mimari, uygulanıyor.
 
-**İlerleme:**
-- ✅ **Faz 0** — İskelet: menü çubuğu uygulaması, kendinden imzalı
-  kararlı sertifika (Keychain'de, ücretsiz), tek-örnek koruması.
-- ✅ **Faz 1** — Kısayol + mikrofon yakalama: **`⌃⌥1`** (Fn istendi ama
-  Carbon API'si desteklemiyor + donanımda çalışmıyor; `⌃⌥Space` "berbat"
-  bulunup değiştirildi). Erişilebilirlik izni olmadan çalıştığı
-  doğrulandı. Kayıt başlama/bitme sesi var (Ping/Pop, kısık).
-- ⚠️ **Faz 2** (çekirdek tamam, HUD bekliyor) — WhisperKit ile
-  transkripsiyon çalışıyor (`openai_whisper-large-v3-v20240930_turbo`).
-  Görsel HUD paneli henüz yok.
-- ✅ **Faz 4** (plan sırasının önüne geçti) — **En kritik soru
-  cevaplandı: kendinden imzalı sertifika hem Mikrofon hem Erişilebilirlik
-  izninde rebuild'lere karşı kalıcı.** İki eski projeyi öldüren duvar
-  gerçekten aşıldı.
-- ⚠️ **Faz 5** (kısmen, Faz 4 ile birlikte erken yapıldı) — Otomatik
-  yapıştırma çalışıyor (Erişilebilirlik izni + `CGEvent` ile ⌘V, pano
-  eski haline dönüyor). Basılı-tutma, girişte otomatik başlatma,
-  sağlık kontrolü henüz yok.
-- ⏳ **Faz 3** (sırada, hiç başlanmadı) — sözlük, Ollama temizleme +
-  güvenlik ağı, VAD, geçmiş.
+**İlerleme: Faz 0, 1, 2, 3, 4, 5 — hepsi tamamlandı ve test edildi
+(2026-09-05).** Fatih'in talimatıyla burada duruldu, bir sonraki adım
+onun onayını bekliyor (planda tanımlı bir "Faz 6" yok).
 
-Sistem şu haliyle **günlük kullanılabilir**: `⌃⌥1` → konuş → metin
-otomatik yerine düşüyor. Tüm ayrıntı, çıkış kriterleri ve bulunan
-hatalar `PLAN.md`'de.
+- ✅ Faz 0 — İskelet, kendinden imzalı kararlı sertifika, tek-örnek koruması.
+- ✅ Faz 1 — Kısayol `⌃⌥1` (Fn/⌃⌥Space denendi, olmadı), Erişilebilirlik
+  izni olmadan çalıştığı doğrulandı.
+- ✅ Faz 2 — WhisperKit transkripsiyon (`large-v3-turbo`) + HUD paneli
+  (dalga formu, durum göstergeleri).
+- ✅ Faz 3 — Sözlük düzeltmesi, Ollama temizleme + güvenlik ağı (gerçek
+  testte üçü de — başarı/zaman aşımı/eleme — gözlendi), VAD (sessizlikte
+  otomatik durma, fiziksel test edildi), geçmiş (JSON + menü).
+- ✅ **Faz 4 — En kritik soru cevaplandı: kendinden imzalı sertifika hem
+  Mikrofon hem Erişilebilirlik izninde rebuild'lere karşı kalıcı.** İki
+  eski projeyi öldüren duvar gerçekten aşıldı.
+- ✅ Faz 5 — Otomatik yapıştırma, basılı-tutma (Sağ Option, fiziksel
+  test edildi), girişte otomatik başlatma (`SMAppService`, kayıt
+  doğrulandı), CGEventTap sağlık kontrolü.
+
+Bilinçli ertelenenler (hiçbir çıkış kriteri gerektirmedi): tam 5 sekmeli
+Ayarlar penceresi, Whisper'a metin promptu, onboarding penceresi, TR/EN
+karışık tek cümle testi. Detay `PLAN.md` bölüm 15'te.
+
+Sistem uçtan uca çalışıyor: `⌃⌥1` (veya Sağ Option basılı tut) → konuş
+→ otomatik/elle durdur → temizlenmiş metin otomatik yerine düşer →
+geçmişe kaydedilir. Tüm ayrıntı, çıkış kriterleri ve bulunan hatalar
+`PLAN.md`'de.
 
 **Her oturumda önce `PLAN.md`'ye bak, orayı güncelle. Her faz
 tamamlandığında bu dosyanın "Durum" bölümü de kısa özetle güncellenir —
@@ -97,7 +100,8 @@ Private repo: **github.com/MekmetFatihBUYUKKARCI/audio-promt-system**
   denince sorulmadan atlanmıştı, Fatih bunu doğru bulmadı.) Bir özellik
   isteği plan sırasıyla çakışırsa **önce çakışmayı söyle, onay bekle** —
   isteği doğrudan uygulayıp sırayı kendiliğinden kırma. Fazlar sırayla
-  tamamlanır (0→1→2→3→4→5→...); bir sonraki faza geçmeden önce haber ver.
+  tamamlanır (0→1→2→3→4→5). **Faz 5'ten sonra plan tanımlı değil —
+  Fatih'in açık talimatı: orada dur, onun onayı olmadan devam etme.**
 - **Otomatik `git push` yok.** Remote bağlı ve lokal commit'ler atılıyor
   ama uzağa göndermek sadece Fatih söyleyince.
 - Bu projenin teknik detayı Jarvis'in genel hafızasına

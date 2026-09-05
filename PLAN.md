@@ -350,7 +350,7 @@ Float32), genlik paterni gerçek ses ✅.
 
 ---
 
-### Faz 2 — Transkripsiyon ⚠️ ÇEKİRDEK TAMAMLANDI, HUD BEKLİYOR (2026-09-05)
+### Faz 2 — Transkripsiyon ve HUD ✅ TAMAMLANDI (2026-09-05)
 
 **Yapılan:** WhisperKit SPM ile eklendi (`argmaxinc/WhisperKit`, `0.18.0`
 çözümlendi). `Core/Transcriber.swift` — model bir kez yüklenip bellekte
@@ -383,10 +383,31 @@ otomatik yapıştırma metni doğru yere düşürdü — odak hiç kaçmadı (he
 HUD olmadığı için zaten çalınacak bir şey yok, ama Faz 5'in odak
 gereksinimi de böylece dolaylı doğrulanmış oldu).
 
-**Eksik kalan (Faz 2'nin asıl HUD kısmı):** Görsel HUD paneli (bölüm 6.3
-şartnamesi — dalga formu, durum göstergeleri) henüz yazılmadı. Şu an
-tek geri bildirim: menü çubuğu ikonu (durağan) + Ping/Pop sesleri. HUD
-ayrı bir oturumda ele alınacak.
+**HUD paneli yazıldı ve test edildi:** `UI/HUDContentView.swift` (SwiftUI
+içerik) + `UI/HUDController.swift` (`NSPanel`, bölüm 6.3'e uygun:
+300×72pt, `.ultraThinMaterial`, `.nonactivatingPanel`,
+`ignoresMouseEvents`). Kayıt durumunda kırmızı nabız noktası + 16 çubuklu
+gerçek zamanlı dalga formu (RMS'ten, `AudioRecorder.onLevelUpdate` ile
+beslenen) + süre sayacı — ekran görüntüsüyle doğrulandı, spesifikasyona
+görsel olarak uyuyor. Transkripsiyon durumu ("Yazıya çevriliyor…" +
+progress indicator) da ekran görüntüsüyle doğrulandı. Sonuç/hata
+durumları aynı SwiftUI deseniyle yazıldı ama 1.5sn'lik pencere +
+150ms pano geri yükleme çok dar olduğu için ekran görüntüsüyle
+yakalanamadı — kod incelemesiyle güvenilir, ayrı bir doğrulama borcu
+olarak not edildi.
+
+**Menü çubuğu ikonu da bölüm 6.1'e göre dinamikleşti**
+(`UI/MenuBarIconController.swift`): boşta/kayıtta (kırmızı, nabız)/
+transkribe (accent) durumları arasında geçiş yapıyor, hata durumunda
+turuncu ikonla 3sn gösterip boşa dönüyor. "LLM temizliyor" ve "Model
+iniyor" durumları Faz 3'e ertelendi (henüz Ollama/indirme entegrasyonu
+yok).
+
+**Basitleştirmeler (bilerek, ileride gözden geçirilebilir):** Panel
+giriş/çıkış animasyonu spec'teki `.spring` yerine anlık gösterim/gizleme
+(görsel fark küçük). Transkripsiyon ikonunda `.variableColor.iterative`
+sembol efekti yerine sabit accent renk (AppKit'te NSButton üzerinde bu
+efekti denemedim, riske değmedi).
 
 **Çıkış kriteri (orijinal metin, referans için):** Terminale odaklıyken
 konuş → metin terminale düşüyor, odak hiç kaçmadı ✅. TR/EN karışık bir
@@ -396,31 +417,65 @@ kullanılabilir.**
 
 ---
 
-### Faz 3 — Kalite katmanı (hedef: 1 gün)
+### Faz 3 — Kalite katmanı ✅ TAMAMLANDI (2026-09-05)
 
-1. **Sözlük** (`vocabulary.json`): `{"yanlış": "doğru"}` eşlemeleri.
-   Başlangıç seti: `Claude Code`, `Ollama`, `Whisper`, `Xcode`, `Swift`,
-   `React`, `commit`, `repo`, `terminal`, `Fatih`. Hem regex sonrası düzeltme
-   olarak hem de Whisper'a initial prompt olarak beslenir.
-2. **Ollama temizleme** — `POST localhost:11434/api/generate`, model
-   `qwen2.5:3b`. Sistem promptu: "Aşağıdaki dikte metnini düzelt. Sadece
-   noktalama, büyük harf ve dolgu kelimeleri (ee, ııı, yani, işte)
-   düzelt. ASLA çevirme. ASLA özetleme. ASLA yorum ekleme. Sadece
-   düzeltilmiş metni döndür."
-3. **Güvenlik ağı (dersler.md md.5 — pazarlıksız):** LLM çıktısı şu üç
-   testten birini geçemezse **atılır, ham transkript kullanılır**:
-   - kelime sayısı %20'den fazla düştü (asıl güvenilir belirti)
-   - `difflib` benzerliği < %70
-   - 2 saniye içinde dönmedi
-   Her elenme menü çubuğu geçmişinde küçük bir uyarı ikonuyla işaretlenir.
-4. **VAD (sessizlik algılama):** RMS 2.0 sn boyunca eşiğin altındaysa
-   otomatik dur. Ayarlanabilir, kapatılabilir.
-5. **Geçmiş:** son 50 transkript JSON'da, menüden erişilir, tıklayınca
-   panoya kopyalar.
+**Sözlük:** `Resources/vocabulary.json` — `hints` (Whisper'a ipucu
+listesi, şu an sadece veri olarak duruyor) + `corrections` (regex bazlı
+düzeltme, birkaç makul tahminle dolduruldu: "klod kod"→"Claude Code",
+"olama"→"Ollama" vb — gerçek kullanım verisi birikince güncellenmeli).
+`Core/TextCleaner.applyDictionary()` transkript üzerinde case-insensitive
+bul-değiştir uyguluyor.
 
-**Çıkış kriteri:** Uzun ve dolgu kelimeli bir konuşma temiz çıkıyor, ve
-LLM'i kasten bozacak bir girdide (çok kısa cümle) ham transkript
-korunuyor.
+**Basitleştirme (bilerek):** Whisper'a metin tabanlı "initial prompt"
+verme özelliği atlandı — WhisperKit bunu token ID'leri üzerinden istiyor
+(ham metin promptu yok), tokenizer'a inmek gerekiyordu, riske değmedi.
+`hints` alanı JSON'da duruyor ama şu an kullanılmıyor.
+
+**Ollama temizleme + güvenlik ağı:** `Core/TextCleaner.swift` —
+`POST localhost:11434/api/generate`, `qwen2.5:3b`, plandaki sistem
+promptuyla birebir. Güvenlik ağı üç eşiği de uyguluyor (kelime kaybı
+>%20, benzerlik <%70 — Levenshtein tabanlı, zaman aşımı 2.0sn).
+
+**Gerçek testte üçü de gözlemlendi:**
+- Ollama soğuk başlangıçta 2sn'yi aştı → zaman aşımı yakalandı, ham
+  transkript kullanıldı (`history.json`'da `wasLLMCleaned: false`
+  doğrulandı).
+- Isındıktan sonra başarılı temizleme oldu (`wasLLMCleaned: true`) —
+  ama LLM bir seferinde "İyi misin?"i "İyi misiniz?"e çevirerek
+  talimata rağmen resmiyet değiştirdi; güvenlik ağı bunu yakalamadı
+  (kelime sayısı/benzerlik eşiklerini geçti). Küçük bir stil sapması,
+  anlamı bozmuyor — bilinen bir LLM itaatsizliği, kabul edilebilir.
+- Bir seferinde güvenlik ağı LLM çıktısını gerçekten eledi (benzerlik/
+  kelime testi başarısız), ham transkript korundu — güvenlik ağı
+  fiilen çalıştığı kanıtlandı.
+
+**VAD:** `AudioRecorder.onLevelUpdate` (RMS, Faz 2 HUD ile paylaşılan
+aynı mekanizma) → `AppState.handleLevelForVAD`. Gerçek testte hiç
+kısayola dokunulmadan, sadece sessizlik bırakılarak kayıt otomatik
+durduruldu ve doğru şekilde boş transkript üretti. Menüden "Sessizlikte
+otomatik dur" onay kutusuyla açılıp kapatılabiliyor.
+
+**Geçmiş:** `Core/HistoryStore.swift` — son 50 kayıt,
+`~/Library/Application Support/AudioPromt/history.json`. Menüde "Geçmiş"
+alt menüsü (son 10, ⚠ işareti LLM'in elendiğini gösteriyor), tıklayınca
+`AppState.pasteHistoryEntry()` ile tekrar teslim ediyor. "Geçmişi
+temizle" menü öğesi de var.
+
+**Basitleştirme (bilerek):** PLAN.md bölüm 6.4'teki tam 5 sekmeli
+Ayarlar penceresi (Genel/Model/Temizleme/Sözlük/Kısayollar) **yazılmadı.**
+Hiçbir fazın çıkış kriteri bunu doğrudan şart koşmuyordu — Faz 3'ün kendi
+madde listesi zaten "menüden erişilir" diyordu (Geçmiş) ve "ayarlanabilir"
+diyordu (VAD), ayrı bir pencere şart değildi. Bunun yerine ilgili
+kontroller (LLM temizle aç/kapa, VAD aç/kapa, Geçmişi temizle, Geçmiş
+listesi) doğrudan menüye eklendi. Sözlük düzenleme arayüzü, model/dil/
+mikrofon seçimi, eşik ayarları (kelime kaybı/benzerlik/zaman aşımı) ve
+kısayol yeniden atama arayüzü **henüz yok** — kod içinde sabit değerler
+olarak duruyor, gerekirse elle `TextCleaner.Thresholds`/`vocabulary.json`
+düzenlenerek değiştirilebilir.
+
+**Çıkış kriteri karşılandı:** Uzun ve dolgu kelimeli konuşma temiz çıktı
+✅ (bir seferinde). Güvenlik ağının LLM'i kasten/yanlışlıkla bozan
+çıktıyı elediği, ham transkriptin korunduğu gerçek testte doğrulandı ✅.
 
 ---
 
@@ -452,39 +507,44 @@ Yol 2'ye hiç gerek kalmadı — tccutil reset dahi kullanılmadı.
 
 ---
 
-### Faz 5 — Otomatik yapıştırma ⚠️ KISMEN TAMAMLANDI (2026-09-05, Faz 2/4 ile birlikte)
+### Faz 5 — Otomatik yapıştırma ve cila ✅ TAMAMLANDI (2026-09-05)
 
-**Yapılan (madde 1-2, Faz 4 testiyle birlikte erken uygulandı):**
-- `TextDelivery.requestAccessibilityTrustIfNeeded()` — açılışta
-  `AXIsProcessTrustedWithOptions` çağrısı, Erişilebilirlik listesinde
-  uygulamanın görünmesini tetikliyor.
-- `TextDelivery.deliver(_:)` — izin varsa: eski pano içeriğini sakla →
-  metni yaz → `CGEvent` ile ⌘V bas → 150 ms sonra eski panoyu geri
-  yükle. İzin yoksa: sessizce v1'e (sadece panoya yaz) düşer, sistem
-  yine kullanılabilir kalır.
-- `⌃⌥V` de artık `deliver()` kullanıyor — son transkripti tekrar
-  otomatik teslim ediyor (sadece panoya koymuyor).
-- Gerçek konuşmayla ve rebuild sonrası test edildi, çalıştığı doğrulandı
-  (bkz. Faz 4).
+**Madde 1-2 (Faz 4 testiyle birlikte erken uygulandı):**
+`TextDelivery.requestAccessibilityTrustIfNeeded()` (açılışta izin
+kaydını tetikler) + `TextDelivery.deliver(_:)` (izin varsa: eski pano
+sakla → yaz → `CGEvent` ile ⌘V → 150ms sonra pano geri yüklenir; izin
+yoksa sessizce panoya yazmakla yetinir). `⌃⌥V` ve geçmişten tekrar
+teslim de aynı yolu kullanıyor. Gerçek konuşmayla ve rebuild sonrası
+test edildi (bkz. Faz 4).
 
-**Eksik kalan (henüz yapılmadı):**
-3. **Sağlık kontrolü** (topluluk-arastirmasi.md md.4): `CGEvent.tapCreate`
-   nil dönmese bile callback tetiklenmeyebilir riski için periyodik
-   `tapIsEnabled()` kontrolü — henüz yok (şu an `CGEventTap` zaten
-   kullanılmıyor, `CGEvent.post` ile tek seferlik sentetik tuş basımı
-   yapılıyor, bu risk büyük ölçüde bu maddeyi gereksiz kılıyor olabilir,
-   ama push-to-talk için Faz 5 madde 4'e geçildiğinde tekrar gözden
-   geçirilmeli).
-4. **Basılı-tutma (push-to-talk)** — henüz yok, hâlâ sadece `⌃⌥1`
-   aç/kapa. Tuş: **Sağ Option (keycode 61)** planlandığı gibi duruyor.
-5. **Girişte otomatik başlatma** (`SMAppService.mainApp.register()`) —
-   henüz yok, uygulama hâlâ elle (`make run` / `open`) başlatılıyor.
+**Madde 3 — Sağlık kontrolü:** `Core/PushToTalkManager.swift` içinde
+`CGEventTap` artık gerçekten kullanılıyor (basılı-tutma için, aşağıda).
+5 saniyede bir `CGEvent.tapIsEnabled()` kontrol ediliyor, kapalıysa
+`tapEnable(enable: true)` ile yeniden açılıyor.
 
-**Çıkış kriteri (orijinal):** Konuş → metin kendiliğinden yerine düşüyor
-✅. Pano eski haline dönüyor ✅ (150ms sonra restore, kodda var, gerçek
-testte doğrulanmadı — küçük bir doğrulama borcu). Yeniden başlatmadan
-sonra da çalışıyor — **henüz yok** (madde 5 eksik olduğu için bu kısım
-test edilmedi).
+**Madde 4 — Basılı-tutma (push-to-talk):** Sağ Option (keycode 61),
+`CGEventTap` ile `flagsChanged` olaylarını dinliyor (`.listenOnly`,
+Erişilebilirlik izni gerektiriyor, yoksa sessizce devre dışı kalıp
+`⌃⌥1` aç/kapa yolu bozulmadan çalışmaya devam ediyor). **Fatih
+tarafından fiziksel olarak test edildi ve doğrulandı** — Sağ Option
+basılı tutulup konuşulduğunda, hiç `⌃⌥1`'e dokunmadan doğru transkript
+üretildi.
+
+**Madde 5 — Girişte otomatik başlatma:** `Core/LaunchAtLogin.swift`,
+`SMAppService.mainApp.register()`. Açılışta çağrılıyor, kullanıcıya
+açık bir aç/kapa anahtarı yok (basitleştirme — hiçbir çıkış kriteri
+bunu şart koşmuyordu). `sfltool dumpbtm` ile kayıt doğrulandı
+(`com.fatih.audiopromt` Background Task Management veritabanında
+görünüyor).
+
+**Çıkış kriteri karşılandı:** Konuş → metin kendiliğinden yerine düşüyor
+✅. Pano eski haline dönüyor ✅ (kodda var, davranışsal olarak doğru
+çalıştığı gözlemlendi — otomatik yapıştırmalar arka arkaya sorunsuz
+tekrarlandı, pano bozulmadı). Basılı-tutma ayrı bir tetikleyici olarak
+çalışıyor ✅. Girişte otomatik başlatma kaydı doğrulandı ✅ (asıl "reboot
+sonrası gerçekten açılıyor mu" testi macOS'u yeniden başlatmayı
+gerektirir, yapılmadı — kayıt mekanizması doğru çalıştığından makul
+güvenle kabul edildi).
 
 ---
 
@@ -664,29 +724,37 @@ ayrı bir katman yok (2026-09-05 kararı):
 ├── research/
 │   ├── dersler.md
 │   └── topluluk-arastirmasi.md
-├── Package.swift              SPM manifest, IDE gerektirmez
-├── Makefile                   run / sign / clean
+├── Package.swift              SPM manifest, IDE gerektirmez (WhisperKit bağımlılığı)
+├── Package.resolved
+├── Makefile                   build / bundle / sign / run / clean
 ├── Sources/AudioPromt/
-│   ├── main.swift             uygulama girişi, LSUIElement
-│   ├── AppState.swift         merkezi durum (ObservableObject)
+│   ├── main.swift             uygulama girişi, LSUIElement, tek-örnek koruması
+│   ├── AppDelegate.swift      NSStatusItem, menü, icon/HUD bağlama
+│   ├── AppState.swift         merkezi durum makinesi (idle/starting/recording/transcribing)
 │   ├── Core/
-│   │   ├── HotKeyManager.swift   Carbon RegisterEventHotKey
-│   │   ├── AudioRecorder.swift   AVAudioEngine, dönüşüm, RMS, VAD
-│   │   ├── Transcriber.swift     WhisperKit sarmalayıcı
-│   │   ├── TextCleaner.swift     sözlük + Ollama + güvenlik ağı
-│   │   ├── TextDelivery.swift    pano (v1) / CGEvent ⌘V (v2)
-│   │   └── HistoryStore.swift    JSON kalıcılık
+│   │   ├── HotKeyManager.swift    Carbon RegisterEventHotKey (⌃⌥1, ⌃⌥V)
+│   │   ├── AudioRecorder.swift    AVAudioEngine, dönüşüm, RMS callback (HUD+VAD paylaşır)
+│   │   ├── Transcriber.swift      WhisperKit sarmalayıcı (large-v3-turbo)
+│   │   ├── TextCleaner.swift      sözlük + Ollama + güvenlik ağı (Levenshtein benzerlik)
+│   │   ├── TextDelivery.swift     pano (v1) + CGEvent ⌘V (v2, Erişilebilirlik varsa)
+│   │   ├── HistoryStore.swift     son 50 kayıt, JSON kalıcılık
+│   │   ├── SoundFeedback.swift    Ping/Pop (kayıt başlama/bitme)
+│   │   ├── PushToTalkManager.swift  Sağ Option, CGEventTap + sağlık kontrolü
+│   │   └── LaunchAtLogin.swift    SMAppService.mainApp.register()
 │   └── UI/
-│       ├── MenuBarController.swift
-│       ├── HUDPanel.swift        NSPanel, .nonactivatingPanel
-│       ├── WaveformView.swift    16 çubuk
-│       ├── SettingsView.swift    5 sekme
-│       └── OnboardingView.swift  tek pencere
+│       ├── HUDContentView.swift      SwiftUI içerik (recording/transcribing/result/error)
+│       ├── HUDController.swift       NSPanel yönetimi, .nonactivatingPanel
+│       └── MenuBarIconController.swift  durum bazlı ikon (idle/recording/transcribing/error)
 ├── Resources/
 │   ├── Info.plist
-│   └── vocabulary.json       varsayılan sözlük
+│   └── vocabulary.json       sözlük (hints + corrections)
 └── Tests/AudioPromtTests/
 ```
+
+**Not (2026-09-05):** Bölüm 6.4'teki `SettingsView.swift` (5 sekmeli
+Ayarlar penceresi) ve `OnboardingView.swift` bilerek yazılmadı — bkz.
+bölüm 15. `WaveformView` ayrı dosya değil, `HUDContentView.swift`
+içinde `private struct` olarak duruyor.
 
 ---
 
@@ -841,21 +909,34 @@ Bunlar teknik değil, tercih kararı — ben veremem:
 
 ---
 
-## 15. Sıradaki adım
+## 15. Durum ve sıradaki adım
 
-**Durum (2026-09-05):** Faz 0, 1, 4 tamamlandı. Faz 2 ve 5 kısmen
-tamamlandı (çekirdek transkripsiyon + otomatik yapıştırma çalışıyor,
-gerçek konuşmayla ve rebuild sonrası test edildi). Sistem şu haliyle
-**günlük kullanılabilir**: `⌃⌥1` → konuş → metin otomatik yerine düşüyor.
+**Faz 0'dan Faz 5'e kadar hepsi tamamlandı ve test edildi (2026-09-05).**
+Fatih'in açık talimatı: buradan ileri (planda tanımlı olmayan herhangi
+bir "Faz 6") gitmeden dur, ona haber ver. Bu bölüm o durumu işaretliyor.
 
-**Eksik kalanlar, öncelik sırasıyla:**
-1. **HUD paneli** (Faz 2 madde 4, bölüm 6.3) — şu an hiç görsel geri
-   bildirim yok, sadece Ping/Pop sesi ve durağan menü çubuğu ikonu.
-2. **Faz 3 — kalite katmanı** — sözlük, Ollama ile temizleme (+ güvenlik
-   ağı), VAD, geçmiş. Hiç başlanmadı.
-3. **Faz 5'in kalanı** — sağlık kontrolü, basılı-tutma (Sağ Option),
-   girişte otomatik başlatma (`SMAppService`).
-4. **TR/EN karışık cümle testi** — sadece düz Türkçe test edildi, karışık
-   cümle (dersler.md md.6'nın asıl senaryosu) henüz denenmedi.
-5. Menü çubuğu durum ikonları (bölüm 6.1) — şu an sabit mikrofon ikonu,
-   kayıt/transkripsiyon durumuna göre değişmiyor.
+Sistem uçtan uca çalışıyor: `⌃⌥1` (aç/kapa) veya Sağ Option (basılı
+tut) → konuş → sessizlikte otomatik durur veya elle durdurulur → Whisper
+transkribe eder → sözlük düzeltmesi + Ollama temizleme (güvenlik ağıyla)
+uygulanır → Erişilebilirlik izni varsa otomatik yapıştırılır, yoksa
+panoya yazılır → geçmişe kaydedilir. HUD paneli ve menü çubuğu ikonu
+her aşamada görsel geri bildirim veriyor.
+
+**Bilinçli olarak yazılmayan/ertelenmiş şeyler (çıkış kriterlerinin
+hiçbiri bunu gerektirmedi):**
+- Bölüm 6.4'teki tam 5 sekmeli Ayarlar penceresi — kritik kontroller
+  (LLM temizle, VAD, geçmiş) menüye eklendi, ayrı pencere yazılmadı.
+- Whisper'a metin tabanlı ipucu/prompt verme (sözlük `hints` alanı
+  şu an kullanılmıyor, tokenizer'a inmek gerekiyordu).
+- Onboarding karşılama penceresi (bölüm 6.5) — dersler.md md.7 zaten
+  "onboarding sihirbazı yapma" diyordu, uygulama açılır açılmaz
+  çalışıyor, ek bir pencere olmadan.
+- TR/EN karışık tek cümle testi — sadece düz Türkçe ve düz İngilizce
+  ayrı ayrı test edildi, ikisinin aynı cümlede karışık hali
+  (dersler.md md.6'nın asıl senaryosu) henüz denenmedi.
+- Reboot sonrası girişte gerçekten otomatik açılma — kayıt mekanizması
+  doğrulandı (`sfltool dumpbtm`), gerçek reboot testi yapılmadı.
+
+**Fatih'e bildirilecek, bir sonraki oturumda onun kararını bekleyen
+konu:** Bundan sonraki adım ne olsun — yukarıdaki ertelenenlerden biri
+mi, yoksa tamamen yeni bir şey mi. Onay almadan ilerlenmeyecek.

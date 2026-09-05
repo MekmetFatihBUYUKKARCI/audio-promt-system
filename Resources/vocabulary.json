@@ -1,0 +1,13 @@
+{
+  "hints": [
+    "Claude Code", "Ollama", "Whisper", "Xcode", "Swift",
+    "React", "commit", "repo", "terminal", "Fatih"
+  ],
+  "corrections": {
+    "klod kod": "Claude Code",
+    "klavd kod": "Claude Code",
+    "olama": "Ollama",
+    "visper": "Whisper",
+    "eks kod": "Xcode"
+  }
+}
