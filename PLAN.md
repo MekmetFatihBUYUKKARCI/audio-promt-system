@@ -248,6 +248,22 @@ kanıtlandı.
 ikonu göründü (kapatılınca kayboldu — doğrulanmış), Dock'ta/⌘Tab'de
 görünmedi (`osascript` ile background-only doğrulandı).
 
+**İkinci test turu (2026-09-05, Fatih'in isteğiyle) — 1 hata bulundu ve
+düzeltildi:**
+- Menü gerçekten açılıyor mu, "Çık" gerçekten kapatıyor mu:
+  `osascript`/System Events ile fiilen tıklanarak doğrulandı (ekran
+  görüntüsüyle: menü "Çık ⌘Q" gösteriyor; tıklanınca süreç gerçekten
+  sonlanıyor). ✅
+- **Bulunan hata:** Uygulama iki kez art arda başlatılınca **iki ayrı
+  süreç birden çalışıyordu** (tek-örnek koruması yoktu — bölüm 11 madde 3
+  planda yazılıydı ama kodda unutulmuştu). Kazara çift açılma ihtimali
+  `LSUIElement` uygulamalarda normalden yüksek (Dock'ta fark edilmiyor).
+- **Düzeltme:** `main.swift`'e `NSRunningApplication.runningApplications
+  (withBundleIdentifier:)` ile açılışta aynı bundle id'den başka süreç
+  var mı kontrolü eklendi; varsa mevcut örnek öne çıkarılır, yeni süreç
+  sessizce kendini kapatır (`exit(0)`). Tekrar test edildi: çift açılışta
+  artık tek süreç kalıyor. ✅
+
 Aşağıdaki orijinal adım listesi referans için duruyor:
 
 1. **Xcode IDE açılmıyor.** `swift package init --type executable` ile
