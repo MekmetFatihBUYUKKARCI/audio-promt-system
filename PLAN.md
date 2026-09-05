@@ -1021,16 +1021,17 @@ oranında), `Info.plist`'te `CFBundleIconFile` ve `Makefile`'ın
    yükleme oldu.
 2. **Whisper halüsinasyonuna karşı süzgeç yoktu.** Sessizlik/ortam
    gürültüsünde Whisper bazen yanlış dilde bile uydurma cümle
-   üretiyordu (bir seferinde tam Rusça bir cümle). Düzeltme: OpenAI
+   üretiyordu (bir seferinde tam Rusça bir cümle). İlk düzeltme: OpenAI
    Whisper'ın kendi sessizlik sezgisiyle aynı mantık — bir sonucun TÜM
    segmentleri hem yüksek `noSpeechProb` (>0.6) hem çok düşük
-   `avgLogprob` (<-1.0) gösteriyorsa o sonuç atılıyor. **Dürüst not:**
-   Bu sezgisel bir süzgeç, garanti değil — Whisper kendi iç güven
-   skorunda emin görünüp yine de yanlış içerik üretirse (test sırasında
-   "Thank you." halüsinasyonu düzeltmeden sonra da bir kez daha geçti)
-   bu süzgeç onu yakalayamaz. Daha sağlam bir çözüm (ör. ses enerjisi
-   eşiğiyle Whisper'ı hiç çağırmama) kapsam dışı bırakıldı, istenirse
-   ayrı bir iş olarak ele alınabilir.
+   `avgLogprob` (<-1.0) gösteriyorsa o sonuç atılıyor. **Bu süzgeç de
+   aynı gün GERİ ALINDI** — gerçek kullanımda Fatih'in gerçek konuşmasını
+   da (yanlışlıkla "sessizlik" sayıp) eleyip boş transkript döndürdüğü
+   görüldü; halüsinasyonu bazen kaçırmaktan çok daha kötü bir hata
+   (gerçek dikteyi sessizce yutmak). Şu an hiçbir halüsinasyon süzgeci
+   yok, ham WhisperKit çıktısı olduğu gibi kullanılıyor. Daha sağlam bir
+   çözüm (ör. ses enerjisi eşiğiyle Whisper'ı hiç çağırmama) kapsam dışı
+   bırakıldı, istenirse ayrı bir iş olarak ele alınabilir.
 
 Ayrıca test sırasında bulunup düzeltilen bir kod-incelemesi hatası:
 `AudioRecorder.stop()` ana thread'den `audioFile`'ı nil'lerken ses
@@ -1043,14 +1044,22 @@ dinliyor (LAN IP'den erişilemediği doğrulandı), shell/Process çağrısı
 veya hardcoded sır yok, güvenlik ağı gerçek testte kötü Ollama çıktısını
 3 kez gerçekten eledi.
 
-**2026-09-05, Fatih onay verdikten sonra tamamlanan:**
-- ✅ **Whisper'a metin tabanlı ipucu/prompt verme.** `vocabulary.json`'daki
-  `hints` artık kullanılıyor — `Transcriber.transcribe()`'a `promptHints`
-  parametresi eklendi, `whisperKit.tokenizer.encode(text:)` ile token'a
-  çevrilip `DecodingOptions.promptTokens` olarak veriliyor (openai-whisper'ın
-  `initial_prompt`'una karşılık gelen WhisperKit mekanizması — metni zorla
-  eklemiyor, sadece bu kelimelerin doğru yazımını daha olası kılıyor).
-  Build+smoke test geçti, çökme yok.
+**2026-09-05, Fatih onay verdikten sonra denenip GERİ ALINAN bir madde:**
+- ❌ **Whisper'a metin tabanlı ipucu/prompt verme — denendi, ciddi bir
+  gerilemeye yol açtı, tamamen geri alındı.** `whisperKit.tokenizer.encode`
+  ile `DecodingOptions.promptTokens` verildi; smoke test (tek deneme)
+  geçmiş gibi göründü ama Fatih'in gerçek art arda push-to-talk
+  kullanımında **ilk kayıttan sonraki HER kayıt boş transkript döndürmeye
+  başladı** — sistem "çalışmıyor" hale geldi. Kök neden kanıtlanamadı ama
+  en güçlü şüphe: WhisperKit'in `usePrefillCache=true` varsayılanı sabit
+  `promptTokens` ile art arda çağrılarda kirli/bozuk önbellek durumu
+  bırakıyor. Kod tamamen geri alındı (`Transcriber.transcribe`'dan
+  `promptHints` parametresi kaldırıldı), 3 art arda push-to-talk
+  denemesiyle düzeldiği doğrulandı. **Ders:** tek başarılı deneme
+  yeterli kanıt değil — art arda gerçek kullanım testi olmadan yeni bir
+  WhisperKit `DecodingOptions` alanını üretime sürmemeli. Tekrar
+  denenecekse önce WhisperKit'in kendi cache davranışı ayrıca
+  araştırılmalı.
 
 **Hâlâ test edilmemiş — bunlar benim tek başıma yapamayacağım, gerçek
 kullanıcı eylemi gerektiriyor:**

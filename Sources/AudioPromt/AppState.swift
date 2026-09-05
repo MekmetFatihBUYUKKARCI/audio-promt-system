@@ -277,8 +277,7 @@ final class AppState {
             let rawText = try await transcriber.transcribe(
                 audioPath: url.path,
                 modelName: prefs.whisperModel.rawValue,
-                languageCode: prefs.languageMode.whisperLanguageCode,
-                promptHints: vocabulary.hints
+                languageCode: prefs.languageMode.whisperLanguageCode
             )
             NSLog("📝 Ham transkript: \(rawText)")
 
