@@ -233,7 +233,10 @@ geçilmez. Her faz sonunda commit atılır (push yok — bkz. Kesin kurallar).
 ### Faz 0 — İskelet (hedef: yarım gün)
 
 1. **Xcode IDE açılmıyor.** `swift package init --type executable` ile
-   SPM paketi kur, `src/AudioPromt/` altına.
+   SPM paketi kur, **doğrudan proje köküne** (`~/audio promt/`) — ayrı bir
+   `src/` katmanı yok, kod `Package.swift`/`Sources/`/`Tests/` olarak
+   `CLAUDE.md`/`PLAN.md` ile aynı seviyede durur (2026-09-05 kararı: tek
+   klasör, katmanlı yapı istenmiyor).
    `Package.swift`'te `platforms: [.macOS(.v14)]`, framework bağımlılıkları
    (AppKit, SwiftUI, AVFoundation, Carbon) sistem kütüphaneleri olarak
    linklenir, ek paket gerekmez.
@@ -262,8 +265,7 @@ geçilmez. Her faz sonunda commit atılır (push yok — bkz. Kesin kurallar).
      (izin mirası için, topluluk-arastirmasi.md md.3)
    - `make sign` — imzalama mantığı burada, madde 5'teki kimlikle
    - `make clean`
-7. Git: proje `~/audio promt/` altına, `src/AudioPromt/`. `.gitignore`'a
-   `.build/`, indirilen modeller.
+7. `.gitignore`'a `.build/`, indirilen modeller (zaten güncellendi).
 
 **Çıkış kriteri:** Menü çubuğunda ikon var, tıklanınca menü açılıyor,
 Dock'ta ikon yok, ⌘Tab'de görünmüyor. İki kez arka arkaya `make run`
@@ -491,6 +493,9 @@ boyutlandırılamaz.
 - `Picker` — Maksimum kayıt süresi: 30 sn / 60 sn / **120 sn** / 5 dk
 - `Picker` — HUD konumu: Alt orta (varsayılan) / Üst orta / Menü
   çubuğunun altı / Kapalı
+- `Button` **"Geçmişi temizle"** (kırmızı, onay istemeli) — bölüm 12
+  madde 1: dikte geçmişi düz JSON olarak diskte duruyor, kullanıcı
+  istediğinde tamamen silebilmeli
 
 **Sekme "Model"**
 - `Picker` — Whisper modeli: `base` (hızlı, ~150 MB) /
@@ -567,6 +572,9 @@ doğrulamak. Çakışma çıkarsa yedekler: `⌃⌥D`, `⌃⇧Space`.
 
 ## 8. Proje dosya yapısı
 
+Tek klasör — plan/araştırma dosyaları ve kod aynı seviyede, `src/` gibi
+ayrı bir katman yok (2026-09-05 kararı):
+
 ```
 ~/audio promt/
 ├── CLAUDE.md              (AGENTS.md → symlink)
@@ -574,28 +582,28 @@ doğrulamak. Çakışma çıkarsa yedekler: `⌃⌥D`, `⌃⇧Space`.
 ├── research/
 │   ├── dersler.md
 │   └── topluluk-arastirmasi.md
-└── src/AudioPromt/
-    ├── Package.swift              SPM manifest, IDE gerektirmez
-    ├── Makefile                   run / sign / clean
-    ├── Sources/App/
-    │   ├── main.swift             uygulama girişi, LSUIElement
-    │   ├── AppState.swift         merkezi durum (ObservableObject)
-    │   ├── Core/
-    │   │   ├── HotKeyManager.swift   Carbon RegisterEventHotKey
-    │   │   ├── AudioRecorder.swift   AVAudioEngine, dönüşüm, RMS, VAD
-    │   │   ├── Transcriber.swift     WhisperKit sarmalayıcı
-    │   │   ├── TextCleaner.swift     sözlük + Ollama + güvenlik ağı
-    │   │   ├── TextDelivery.swift    pano (v1) / CGEvent ⌘V (v2)
-    │   │   └── HistoryStore.swift    JSON kalıcılık
-    │   └── UI/
-    │       ├── MenuBarController.swift
-    │       ├── HUDPanel.swift        NSPanel, .nonactivatingPanel
-    │       ├── WaveformView.swift    16 çubuk
-    │       ├── SettingsView.swift    5 sekme
-    │       └── OnboardingView.swift  tek pencere
-    └── Resources/
-        ├── Info.plist
-        └── vocabulary.json       varsayılan sözlük
+├── Package.swift              SPM manifest, IDE gerektirmez
+├── Makefile                   run / sign / clean
+├── Sources/AudioPromt/
+│   ├── main.swift             uygulama girişi, LSUIElement
+│   ├── AppState.swift         merkezi durum (ObservableObject)
+│   ├── Core/
+│   │   ├── HotKeyManager.swift   Carbon RegisterEventHotKey
+│   │   ├── AudioRecorder.swift   AVAudioEngine, dönüşüm, RMS, VAD
+│   │   ├── Transcriber.swift     WhisperKit sarmalayıcı
+│   │   ├── TextCleaner.swift     sözlük + Ollama + güvenlik ağı
+│   │   ├── TextDelivery.swift    pano (v1) / CGEvent ⌘V (v2)
+│   │   └── HistoryStore.swift    JSON kalıcılık
+│   └── UI/
+│       ├── MenuBarController.swift
+│       ├── HUDPanel.swift        NSPanel, .nonactivatingPanel
+│       ├── WaveformView.swift    16 çubuk
+│       ├── SettingsView.swift    5 sekme
+│       └── OnboardingView.swift  tek pencere
+├── Resources/
+│   ├── Info.plist
+│   └── vocabulary.json       varsayılan sözlük
+└── Tests/AudioPromtTests/
 ```
 
 ---
@@ -630,7 +638,94 @@ doğrulamak. Çakışma çıkarsa yedekler: `⌃⌥D`, `⌃⇧Space`.
 
 ---
 
-## 11. Kesin kurallar (Fatih aksini söyleyene kadar)
+## 11. Eşzamanlılık ve durum makinesi (kodlamaya başlamadan önce sabitlenmeli)
+
+Bu sistemin gerçek "sonradan büyük sıkıntı çıkarır" riski TCC değil —
+o zaten katman katman ele alındı. Asıl risk, kayıt/transkripsiyon/
+temizleme/teslim zincirinde **durum yönetimi gevşek bırakılırsa** ortaya
+çıkar: hızlı art arda kısayol basma, ikinci bir kayıt üstüste binmesi,
+model her seferinde yeniden yüklenmesi gibi sorunlar geç fark edilir ve
+o zaman her katmana yayılmış olur. Baştan sabitleniyor:
+
+1. **Tek durum makinesi, `AppState` içinde:**
+   `idle → recording → transcribing → cleaning → delivering → idle`.
+   Kısayol sadece `idle ↔ recording` geçişini tetikler. `transcribing`/
+   `cleaning`/`delivering` sırasında gelen kısayol **yok sayılır** (HUD'da
+   kısa bir "meşgul" titreşimiyle görünür geri bildirim verilir,
+   sessizce kaybolmaz).
+2. **WhisperKit modeli bir kez yüklenir.** Uygulama açılışında (veya ilk
+   kayıttan hemen sonra) lazy-load edilir ve bellekte tutulur — her
+   transkripsiyon çağrısında yeniden yüklenmez. Faz 2'nin çıkış kriterine
+   şu eklenir: art arda 3 dikte, üçünde de gecikme farkı yok.
+3. **Tek örnek (single instance) koruması.** `NSRunningApplication` ile
+   açılışta aynı bundle id'den başka çalışan var mı kontrol edilir, varsa
+   yeni süreç onu öne çıkarıp kendi kapanır. `LSUIElement` uygulamalarda
+   Dock'tan fark edilmediği için kazara çift açılma ihtimali normalden
+   yüksek (özellikle Faz 6'da başkalarına dağıtılınca).
+4. **Ollama çağrısı iptal edilebilir olmalı.** Kullanıcı temizleme
+   sürerken yeni bir kayıt başlatmaya çalışırsa (durum makinesi bunu zaten
+   engelliyor ama) HTTP isteğinin kendisi de 2 sn zaman aşımından önce
+   `URLSession` task iptaliyle sonlandırılabilmeli — asılı kalan istek
+   olmamalı.
+
+**Çıkış kriteri (Faz 2'ye ek):** Kısayola üst üste hızlı 5 kez basılınca
+uygulama çökmüyor, kayıt üstüste binmiyor, HUD tutarlı bir durum
+gösteriyor.
+
+---
+
+## 12. Güvenlik ve dağıtım (başkalarına verilecek olması gözetilerek)
+
+**Tehdit modeli özetle iyi durumda: sunucu yok, bulut yok, telemetri
+yok.** Tüm işlem (ses yakalama, transkripsiyon, LLM temizleme) tek
+makinede kalıyor. Uzaktan "hacklenecek" bir sunucu bileşeni **hiç yok** —
+bu, tasarımın kendiliğinden getirdiği en büyük güvenlik avantajı.
+
+1. **Veri gizliliği.** Geçmiş (`HistoryStore`) düz JSON, diskte,
+   `~/Library/Application Support/AudioPromt/`. Fatih'in veya
+   arkadaşlarının dikte ettiği her şey (yanlışlıkla söylenen şifre,
+   özel bilgi dahil) burada düz metin duruyor. Şifreleme şart değil
+   (tek kullanıcılı yerel makine, App Sandbox yok) ama:
+   - Ayarlar'da **"Geçmişi temizle"** butonu olmalı (şu an planda yok,
+     ekleniyor — bkz. bölüm 6.4).
+   - README/karşılama ekranında tek cümlelik açık uyarı: "Dikte
+     ettiğiniz metinler sadece bu bilgisayarda saklanır, hiçbir yere
+     gönderilmez."
+2. **Ollama ağ maruziyeti.** Ollama varsayılan olarak sadece
+   `127.0.0.1:11434`'te dinler — dışarıdan erişilemez. **Kritik kural:**
+   `OLLAMA_HOST=0.0.0.0` gibi bir ortam değişkeniyle bunu asla dışarı
+   açma (bazı kurulum rehberleri bunu öneriyor, bizim için gereksiz ve
+   tehlikeli — aynı ağdaki biri o zaman yerel LLM'e istek atabilir).
+   Varsayılanı değiştirmeden bırakmak yeterli.
+3. **Bağımlılık güveni.** WhisperKit (argmaxinc, aktif bakımlı, açık
+   kaynak) ve Ollama (açık kaynak, yaygın kullanılan) — ikisi de bilinen
+   kötü niyetli geçmişi olmayan, popüler projeler. Model dosyaları
+   WhisperKit'in resmi Hugging Face deposundan iniyor, elle indirilen
+   şüpheli bir ikili yok.
+4. **Dağıtım/Gatekeeper (arkadaşlara verirken asıl fark eden nokta).**
+   Uygulama Apple tarafından notarize edilmeyecek (ücretli yol yok).
+   Bir arkadaşın Mac'inde ilk açılışta Gatekeeper **"Tanımlanamayan
+   geliştirici"** uyarısı verecek — bu bir güvenlik açığı değil, sadece
+   Apple'ın imzasız uygulamalara varsayılan tepkisi. Çözümü tek seferlik:
+   Finder'da sağ tık → Aç, ya da `xattr -d com.apple.quarantine
+   AudioPromt.app`. Bu adım README'ye yazılacak.
+5. **Her arkadaşın izinleri kendi makinesinde ayrı.** TCC (Mikrofon,
+   Erişilebilirlik) kişi başına, makine başına — biri izin verince
+   başkasınınki etkilenmez, paylaşılan bir zafiyet oluşmaz.
+6. **Saldırı yüzeyi olarak kalanlar (düşük risk, bilgi amaçlı):**
+   global kısayol dinleyicisi (kullanıcı girdisi çalıştırılmıyor, sadece
+   tetikleyici), ve dikte edilen metnin Ollama'ya prompt olarak gitmesi
+   (teorik prompt injection — ama sonucu yalnızca temizlenmiş metin,
+   kod çalıştırma değil; güvenlik ağı zaten anormal çıktıyı atıyor).
+   İkisi de gerçek bir yetki yükseltme veya veri sızdırma yolu açmıyor.
+7. **Otomatik güncelleme yok (kasıtlı).** Uzaktan kod güncelleme
+   mekanizması eklenmedikçe tedarik zinciri saldırısı (kötü niyetli
+   güncelleme) için bir giriş noktası da yok. İleride otomatik güncelleme
+   eklenirse bu bölüm yeniden gözden geçirilmeli.
+
+---
+
+## 13. Kesin kurallar (Fatih aksini söyleyene kadar)
 
 - **Otomatik `git push` yok.** Lokal commit atılır, uzağa gönderme sadece
   Fatih söyleyince.
@@ -642,7 +737,7 @@ doğrulamak. Çakışma çıkarsa yedekler: `⌃⌥D`, `⌃⇧Space`.
 
 ---
 
-## 12. Fatih'in karar vermesi gereken noktalar
+## 14. Fatih'in karar vermesi gereken noktalar
 
 Bunlar teknik değil, tercih kararı — ben veremem:
 
@@ -660,7 +755,7 @@ Bunlar teknik değil, tercih kararı — ben veremem:
 
 ---
 
-## 13. Sıradaki adım
+## 15. Sıradaki adım
 
 **Faz 0, madde 1** — `swift package init` ile SPM iskeletini kur. Onay
 verilirse başlıyorum.
