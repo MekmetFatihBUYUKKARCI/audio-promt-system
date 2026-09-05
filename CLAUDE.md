@@ -21,19 +21,26 @@ düzenlemek ikisini birden düzenler. Elle senkron gerekmez, **ama**:
 
 Aynı desen vault kökünde de kullanılıyor.
 
-## Durum (2026-09-05)
+## Durum (2026-09-05) — canlı, her faz bitince güncellenir
 
-İki yaklaşım denendi ve terk edildi:
-- **VoiceInk** (Swift fork) — onboarding sihirbazı dışarıdan verilen
-  config'i yok saydı, kontrol elimizde değildi.
-- **whisper-dictate** (Python fork) — kod tamamen çalışır hale getirildi
-  ve sentetik testle kanıtlandı, ama macOS Erişilebilirlik izni hiçbir
-  şekilde `.app`'e yansımadı (TCC sorunu, kod hatası değil).
+İki eski yaklaşım terk edildi (VoiceInk, whisper-dictate — TCC/onboarding
+sorunları, bkz. `research/dersler.md`). Üçüncü yaklaşım: sıfırdan native
+Swift, izin ihtiyacına göre katmanlanmış mimari, uygulanıyor.
 
-Şu an **üçüncü ve son yaklaşımın planı hazır**: sıfırdan native Swift,
-izin ihtiyacına göre katmanlanmış mimari. Tüm ayrıntı `PLAN.md`'de.
+**İlerleme:**
+- ✅ **Faz 0** — İskelet: menü çubuğu uygulaması, kendinden imzalı
+  kararlı sertifika (Keychain'de, ücretsiz), tek-örnek koruması.
+- ✅ **Faz 1** — Kısayol + mikrofon yakalama: **`⌃⌥1`** (Fn istendi ama
+  Carbon API'si desteklemiyor + donanımda çalışmıyor; `⌃⌥Space` "berbat"
+  bulunup değiştirildi). Erişilebilirlik izni olmadan çalıştığı
+  doğrulandı. Kayıt başlama/bitme sesi var (Ping/Pop, kısık).
+- ⏳ **Faz 2** (sırada) — WhisperKit transkripsiyon + HUD paneli.
 
-**Her oturumda önce `PLAN.md`'ye bak, orayı güncelle.**
+Tüm ayrıntı, çıkış kriterleri ve bulunan hatalar `PLAN.md`'de.
+
+**Her oturumda önce `PLAN.md`'ye bak, orayı güncelle. Her faz
+tamamlandığında bu dosyanın "Durum" bölümü de kısa özetle güncellenir —
+sadece `PLAN.md`'de bırakılmaz.**
 
 ## Planın temel içgörüsü
 
