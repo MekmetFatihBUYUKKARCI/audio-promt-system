@@ -25,6 +25,12 @@ Sistem şu üç şeyi yaptığında **bitti** sayılır:
 3. Makine yeniden başlatıldığında hiçbir şey elle onarılmadan çalışmaya
    devam eder. **Önceki iki denemenin öldüğü yer tam olarak burası.**
 
+**Kapsam notu (2026-09-05):** Bu proje **macOS'a özel** yazılıyor
+(AppKit, Carbon, TCC, WhisperKit'in CoreML/ANE bağımlılığı) — Windows'ta
+çalışmaz. Fatih'in çevresinde Windows kullanan kişiler de var; onlar için
+ayrı bir yol (muhtemelen farklı bir uygulama/yaklaşım) **ileride, ayrı bir
+konu** olarak ele alınacak. Şimdilik kapsam sadece Fatih'in Mac'i.
+
 ---
 
 ## 1. Temel içgörü — İzin Merdiveni
