@@ -16,11 +16,11 @@ yok.
 
 ## Yapılacaklar (sırayla, her biri bağımsız — birini bitir, işaretle, sıradakine geç)
 
-- [ ] **1. TR/EN karışık tek cümle testi.** Fatih'in aynı cümle içinde
-      Türkçe ve İngilizce karıştırarak konuşması gerekiyor (ör. "Bugün
-      çok tired hissediyorum ama işe gitmem lazım"). Agent bunu tek
-      başına yapamaz — Fatih'e sor, sonucu (doğru mu ayırdı, hangisi
-      İngilizce/Türkçe karıştı) burada bir satırla kaydet.
+- [x] **1. TR/EN karışık tek cümle testi — YAPILDI, GEÇTİ (2026-09-05).**
+      Fatih "Push etmek, Pull etmek, Reverse etmek, Return etmek I love
+      you, Sen love beni" ve "Tamam bunu pushlayalım." dedi, Whisper
+      ikisini de doğru ayırdı/transkribe etti (dil kodu karıştırmadı,
+      anlamsız çıktı üretmedi). Fatih onayladı: "okey çalışıyor."
 - [ ] **2. Gerçek reboot testi.** Bilgisayar yeniden başlatılıp Audio
       Promt'un kendiliğinden açıldığı doğrulanmalı. Agent bunu tek
       başına yapamaz (oturumu bitirir) — Fatih uygun zamanında yapsın,
