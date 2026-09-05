@@ -92,6 +92,12 @@ Private repo: **github.com/MekmetFatihBUYUKKARCI/audio-promt-system**
 
 ## Sabit kurallar
 
+- **Plan sırası kırılmaz — asla sormadan atlama.** (2026-09-05 dersi:
+  Faz 2 test edilirken Faz 4/5'e "hemen otomatik yapıştırma istiyorum"
+  denince sorulmadan atlanmıştı, Fatih bunu doğru bulmadı.) Bir özellik
+  isteği plan sırasıyla çakışırsa **önce çakışmayı söyle, onay bekle** —
+  isteği doğrudan uygulayıp sırayı kendiliğinden kırma. Fazlar sırayla
+  tamamlanır (0→1→2→3→4→5→...); bir sonraki faza geçmeden önce haber ver.
 - **Otomatik `git push` yok.** Remote bağlı ve lokal commit'ler atılıyor
   ama uzağa göndermek sadece Fatih söyleyince.
 - Bu projenin teknik detayı Jarvis'in genel hafızasına
