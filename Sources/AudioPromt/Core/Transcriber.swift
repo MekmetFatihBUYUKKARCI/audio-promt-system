@@ -33,7 +33,7 @@ final class Transcriber: @unchecked Sendable {
         }
     }
 
-    func transcribe(audioPath: String, modelName: String, languageCode: String?) async throws -> String {
+    func transcribe(audioPath: String, modelName: String, languageCode: String?, promptHints: [String] = []) async throws -> String {
         let whisperKit = try await ensureLoaded(modelName: modelName)
 
         // language: nil BIRAKILMASI TEK BAŞINA YETMİYOR — WhisperKit'in
@@ -41,7 +41,20 @@ final class Transcriber: @unchecked Sendable {
         // varsayılan olarak false'a düşüyor ve İngilizce'ye sabitleniyor.
         // TR/EN karışık dikte için detectLanguage açıkça true verilmeli
         // (dil sabitlenmediği sürece).
-        let options = DecodingOptions(language: languageCode, detectLanguage: languageCode == nil)
+        //
+        // promptTokens: vocabulary.json'daki `hints` (özel isimler/jargon)
+        // Whisper'ın kendi initial_prompt mekanizmasıyla decoder'a "bağlam"
+        // olarak veriliyor — metni zorla eklemiyor, sadece bu kelimelerin
+        // doğru yazımını daha olası kılıyor. PLAN.md bölüm 15'te "tokenizer'a
+        // inmek gerekiyordu" denen kısım bu: `whisperKit.tokenizer.encode`.
+        let promptTokens: [Int]? = promptHints.isEmpty
+            ? nil
+            : whisperKit.tokenizer?.encode(text: promptHints.joined(separator: ", "))
+        let options = DecodingOptions(
+            language: languageCode,
+            detectLanguage: languageCode == nil,
+            promptTokens: promptTokens
+        )
 
         let results: [TranscriptionResult] = try await whisperKit.transcribe(audioPath: audioPath, decodeOptions: options)
 

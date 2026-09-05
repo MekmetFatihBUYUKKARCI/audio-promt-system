@@ -1043,12 +1043,24 @@ dinliyor (LAN IP'den erişilemediği doğrulandı), shell/Process çağrısı
 veya hardcoded sır yok, güvenlik ağı gerçek testte kötü Ollama çıktısını
 3 kez gerçekten eledi.
 
-**Hâlâ yazılmamış/test edilmemiş, bilinçli ertelenmiş konular:**
-- Whisper'a metin tabanlı ipucu/prompt verme (sözlük `hints` alanı
-  şu an kullanılmıyor).
-- TR/EN karışık tek cümle testi (dersler.md md.6'nın asıl senaryosu).
-- Reboot sonrası girişte gerçekten otomatik açılma (kayıt mekanizması
-  `sfltool dumpbtm` ile doğrulandı, gerçek reboot testi yapılmadı).
+**2026-09-05, Fatih onay verdikten sonra tamamlanan:**
+- ✅ **Whisper'a metin tabanlı ipucu/prompt verme.** `vocabulary.json`'daki
+  `hints` artık kullanılıyor — `Transcriber.transcribe()`'a `promptHints`
+  parametresi eklendi, `whisperKit.tokenizer.encode(text:)` ile token'a
+  çevrilip `DecodingOptions.promptTokens` olarak veriliyor (openai-whisper'ın
+  `initial_prompt`'una karşılık gelen WhisperKit mekanizması — metni zorla
+  eklemiyor, sadece bu kelimelerin doğru yazımını daha olası kılıyor).
+  Build+smoke test geçti, çökme yok.
 
-**Sıradaki adım:** Yukarıdaki ertelenenlerden biri mi, yoksa yeni bir
-konu mu — Fatih'in kararını bekliyor.
+**Hâlâ test edilmemiş — bunlar benim tek başıma yapamayacağım, gerçek
+kullanıcı eylemi gerektiriyor:**
+- TR/EN karışık tek cümle testi (dersler.md md.6'nın asıl senaryosu) —
+  gerçek bir insan sesi gerekiyor, Fatih'in bunu bizzat söyleyip test
+  etmesi gerekiyor.
+- Reboot sonrası girişte gerçekten otomatik açılma — kayıt mekanizması
+  `sfltool dumpbtm` ile doğrulandı ama gerçek reboot testi yapılmadı;
+  reboot bu oturumu da sonlandıracağı için Fatih'in kendi uygun
+  zamanında yapması gerekiyor.
+
+**Sıradaki adım:** Yukarıdaki 2 test Fatih'in eylemini bekliyor,
+başka açık iş yok.

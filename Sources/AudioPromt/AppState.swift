@@ -271,18 +271,20 @@ final class AppState {
         }
 
         let prefs = Preferences.shared
+        let vocabulary = Vocabulary.loadFromBundle()
 
         do {
             let rawText = try await transcriber.transcribe(
                 audioPath: url.path,
                 modelName: prefs.whisperModel.rawValue,
-                languageCode: prefs.languageMode.whisperLanguageCode
+                languageCode: prefs.languageMode.whisperLanguageCode,
+                promptHints: vocabulary.hints
             )
             NSLog("📝 Ham transkript: \(rawText)")
 
             if !rawText.isEmpty {
                 let cleaner = TextCleaner(
-                    vocabulary: Vocabulary(hints: Vocabulary.loadFromBundle().hints, corrections: prefs.vocabularyCorrections),
+                    vocabulary: Vocabulary(hints: vocabulary.hints, corrections: prefs.vocabularyCorrections),
                     thresholds: TextCleaner.Thresholds(
                         maxWordLossFraction: prefs.maxWordLossPercent / 100,
                         minSimilarity: prefs.minSimilarityPercent / 100,
