@@ -74,7 +74,7 @@ tuşuna güvenilmez. Mikrofon: dahili + ROG Strix Go USB kulaklık.
 
 ## GitHub
 
-Private repo: **github.com/MekmetFatihBUYUKKARCI/audio-promt-system**
+Repo (public, MIT): **github.com/MekmetFatihBUYUKKARCI/audio-promt-system**
 (`origin` olarak bağlı, lokal `main` dalında commit'ler atılıyor).
 
 ## Sabit kurallar
